@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="uk"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Data.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">ua.kpi.radmonitor.data</a> &gt; <span class="el_source">Data.kt</span></div><h1>Data.kt</h1><pre class="source lang-java linenums">package ua.kpi.radmonitor.data
+import ua.kpi.radmonitor.*
+import ua.kpi.radmonitor.domain.*
+import ua.kpi.radmonitor.data.*
+import ua.kpi.radmonitor.viewmodel.*
+import ua.kpi.radmonitor.device.*
+import ua.kpi.radmonitor.ui.*
+
+
+import android.content.Context
+import androidx.room.*
+import com.google.gson.Gson
+import java.io.IOException
+import kotlinx.coroutines.flow.Flow
+import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.ResponseBody.Companion.toResponseBody
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.http.Body
+import retrofit2.http.GET
+import retrofit2.http.Header
+import retrofit2.http.POST
+
+@Dao
+interface MeasurementDao {
+    @Query(&quot;SELECT * FROM measurements ORDER BY timestamp DESC&quot;)
+    fun observe(): Flow&lt;List&lt;Measurement&gt;&gt;
+
+    @Upsert suspend fun write(item: Measurement)
+    @Insert suspend fun audit(event: ChangeEvent)
+    @Transaction suspend fun upsert(item: Measurement) {
+<span class="nc" id="L33">        write(item)</span>
+<span class="nc" id="L34">        audit(ChangeEvent(measurementId = item.id, action = &quot;Збереження&quot;))</span>
+<span class="nc" id="L35">    }</span>
+
+<span class="nc" id="L37">    @Transaction suspend fun upsertAll(items: List&lt;Measurement&gt;) { items.forEach { upsert(it) } }</span>
+    @Query(&quot;SELECT * FROM changes WHERE measurementId=:id ORDER BY changedAt DESC&quot;)
+    fun history(id: String): Flow&lt;List&lt;ChangeEvent&gt;&gt;
+    @Query(&quot;SELECT type, COUNT(*) AS count, AVG(doseRate) AS average, MAX(doseRate) AS peak FROM measurements GROUP BY type&quot;)
+    fun statistics(): Flow&lt;List&lt;TypeStatistics&gt;&gt;
+
+    @Query(&quot;DELETE FROM measurements WHERE id=:id&quot;) suspend fun delete(id: String)
+}
+
+@Entity(tableName = &quot;changes&quot;, foreignKeys = [ForeignKey(entity = Measurement::class, parentColumns = [&quot;id&quot;], childColumns = [&quot;measurementId&quot;], onDelete = ForeignKey.CASCADE)], indices = [Index(&quot;measurementId&quot;)])
+<span class="nc" id="L47">data class ChangeEvent(@PrimaryKey(autoGenerate = true) val eventId: Long = 0, val measurementId: String, val action: String, val changedAt: Long = System.currentTimeMillis())</span>
+<span class="nc" id="L48">data class TypeStatistics(val type: String, val count: Int, val average: Double, val peak: Double)</span>
+
+<span class="nc" id="L50">@Database(entities = [Measurement::class, ChangeEvent::class], version = 2, exportSchema = false)</span>
+<span class="nc" id="L51">abstract class MonitorDatabase : RoomDatabase() {</span>
+    abstract fun dao(): MeasurementDao
+
+    companion object {
+        fun create(c: Context) =
+<span class="nc" id="L56">            Room.databaseBuilder(c, MonitorDatabase::class.java, &quot;monitor.db&quot;).addMigrations(object : androidx.room.migration.Migration(1,2) {</span>
+                override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+<span class="nc" id="L58">                    db.execSQL(&quot;CREATE TABLE IF NOT EXISTS changes (eventId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, measurementId TEXT NOT NULL, action TEXT NOT NULL, changedAt INTEGER NOT NULL, FOREIGN KEY(measurementId) REFERENCES measurements(id) ON DELETE CASCADE)&quot;)</span>
+<span class="nc" id="L59">                    db.execSQL(&quot;CREATE INDEX IF NOT EXISTS index_changes_measurementId ON changes(measurementId)&quot;)</span>
+<span class="nc" id="L60">                }</span>
+<span class="nc" id="L61">            }).build()</span>
+    }
+}
+
+<span class="fc" id="L65">data class LoginRequest(val email: String, val password: String)</span>
+
+<span class="fc" id="L67">data class RegistrationRequest(val name: String, val email: String, val password: String)</span>
+
+<span class="pc" id="L69">data class Session(val token: String, val role: String, val expiresAt: Long = System.currentTimeMillis() + 3600000)</span>
+
+interface MonitorApi {
+    @POST(&quot;register&quot;) suspend fun register(@Body body: RegistrationRequest): Session
+
+    @POST(&quot;login&quot;) suspend fun login(@Body body: LoginRequest): Session
+
+    @GET(&quot;measurements&quot;)
+    suspend fun measurements(@Header(&quot;Authorization&quot;) authorization: String): List&lt;Measurement&gt;
+}
+
+/**
+ * Відтворюваний mock API: Retrofit виконує JSON/HTTP pipeline через OkHttp. У деморежимі дані не
+ * передаються сторонньому серверу.
+ */
+<span class="fc" id="L84">class DemoApiInterceptor(context: Context? = null) : Interceptor {</span>
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">    private val preferences = context?.getSharedPreferences(&quot;demo-api&quot;, 0)</span>
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">    private var expiresAt = preferences?.getLong(&quot;expiresAt&quot;, 0) ?: 0</span>
+    private fun issue(role: String): Session {
+<span class="fc" id="L88">        expiresAt = System.currentTimeMillis() + 3600000</span>
+<span class="fc" id="L89">        issuedToken = &quot;demo.$role.$expiresAt.${java.util.UUID.randomUUID()}&quot;</span>
+<span class="pc bpc" id="L90" title="7 of 8 branches missed.">        preferences?.edit()?.putString(&quot;token&quot;, issuedToken)?.putLong(&quot;expiresAt&quot;, expiresAt)?.apply()</span>
+<span class="fc" id="L91">        return Session(issuedToken!!, role, expiresAt)</span>
+    }
+<span class="pc" id="L93">    @Volatile var scenario = &quot;Успіх&quot;</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">    private var issuedToken: String? = preferences?.getString(&quot;token&quot;, null)</span>
+    private val accounts =
+<span class="fc" id="L96">        mutableMapOf(&quot;operator@demo.ua&quot; to &quot;Demo12345&quot;, &quot;viewer@demo.ua&quot; to &quot;Demo12345&quot;)</span>
+
+    override fun intercept(chain: Interceptor.Chain): Response {
+<span class="fc" id="L99">        val request = chain.request()</span>
+<span class="fc" id="L100">        var code = 200</span>
+<span class="fc" id="L101">        val gson = Gson()</span>
+<span class="fc" id="L102">        val body =</span>
+<span class="fc" id="L103">            when {</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">                request.url.encodedPath.endsWith(&quot;register&quot;) -&gt; {</span>
+<span class="fc" id="L105">                    val buffer = okio.Buffer()</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">                    request.body?.writeTo(buffer)</span>
+<span class="fc" id="L107">                    val r = gson.fromJson(buffer.readUtf8(), RegistrationRequest::class.java)</span>
+                    if (
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">                        r.name.isBlank() ||</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">                            MonitorLogic.validateLogin(r.email, r.password) != null ||</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">                            accounts.containsKey(r.email)</span>
+                    ) {
+<span class="fc" id="L113">                        code = 400</span>
+<span class="fc" id="L114">                        &quot;{}&quot;</span>
+                    } else {
+<span class="fc" id="L116">                        accounts[r.email] = r.password</span>
+<span class="fc" id="L117">                        gson.toJson(issue(&quot;viewer&quot;))</span>
+                    }
+                }
+<span class="fc bfc" id="L120" title="All 2 branches covered.">                request.url.encodedPath.endsWith(&quot;login&quot;) -&gt; {</span>
+<span class="fc" id="L121">                    val buffer = okio.Buffer()</span>
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">                    request.body?.writeTo(buffer)</span>
+<span class="fc" id="L123">                    val login = gson.fromJson(buffer.readUtf8(), LoginRequest::class.java)</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">                    if (accounts[login.email] == login.password) {</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">                        gson.toJson(issue(if (login.email == &quot;operator@demo.ua&quot;) &quot;operator&quot; else &quot;viewer&quot;))</span>
+                    } else {
+<span class="fc" id="L127">                        code = 401</span>
+<span class="fc" id="L128">                        &quot;{}&quot;</span>
+                    }
+                }
+<span class="pc bpc" id="L131" title="2 of 8 branches missed.">                request.header(&quot;Authorization&quot;) != &quot;Bearer $issuedToken&quot; || issuedToken == null || System.currentTimeMillis() &gt;= expiresAt || scenario == &quot;Сеанс завершено&quot; -&gt; {</span>
+<span class="fc" id="L132">                    code = 401</span>
+<span class="fc" id="L133">                    &quot;{}&quot;</span>
+                }
+<span class="fc bfc" id="L135" title="All 2 branches covered.">                scenario == &quot;Без мережі&quot; -&gt;</span>
+<span class="fc" id="L136">                    throw IOException(&quot;Навчальна симуляція відсутності мережі&quot;)</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">                scenario == &quot;HTTP 503&quot; -&gt; {</span>
+<span class="fc" id="L138">                    code = 503</span>
+<span class="fc" id="L139">                    &quot;{}&quot;</span>
+                }
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">                scenario == &quot;Хибний JSON&quot; -&gt; &quot;{broken&quot;</span>
+<span class="fc" id="L142">                else -&gt; gson.toJson(MonitorLogic.samples())</span>
+            }
+<span class="fc" id="L144">        return Response.Builder()</span>
+<span class="fc" id="L145">            .request(request)</span>
+<span class="fc" id="L146">            .protocol(Protocol.HTTP_1_1)</span>
+<span class="fc" id="L147">            .code(code)</span>
+<span class="fc" id="L148">            .message(&quot;Demo API&quot;)</span>
+<span class="fc" id="L149">            .body(body.toResponseBody(&quot;application/json&quot;.toMediaType()))</span>
+<span class="fc" id="L150">            .build()</span>
+    }
+}
+
+<span class="nc" id="L154">class MonitorRepository(private val dao: MeasurementDao, private val context: Context) {</span>
+<span class="nc" id="L155">    val records = dao.observe()</span>
+<span class="nc" id="L156">    val mock = DemoApiInterceptor(context)</span>
+<span class="nc" id="L157">    private val authPreferences = context.getSharedPreferences(&quot;auth&quot;, 0)</span>
+<span class="nc" id="L158">    private var authToken: String? = authPreferences.getString(&quot;token&quot;, null)</span>
+<span class="nc" id="L159">    private val authInterceptor = Interceptor { chain -&gt;</span>
+<span class="nc" id="L160">        val request = chain.request()</span>
+<span class="nc bnc" id="L161" title="All 4 branches missed.">        val authenticated = if (request.header(&quot;Authorization&quot;) == null &amp;&amp; authToken != null)</span>
+<span class="nc" id="L162">            request.newBuilder().header(&quot;Authorization&quot;, &quot;Bearer $authToken&quot;).build() else request</span>
+<span class="nc" id="L163">        chain.proceed(authenticated)</span>
+    }
+    fun rememberSession(session: Session) {
+<span class="nc" id="L166">        authToken = session.token</span>
+<span class="nc" id="L167">        authPreferences.edit().putString(&quot;token&quot;, session.token).putLong(&quot;expiresAt&quot;, session.expiresAt).apply()</span>
+<span class="nc" id="L168">    }</span>
+<span class="nc" id="L169">    fun clearSession() { authToken = null; authPreferences.edit().clear().apply() }</span>
+<span class="nc" id="L170">    fun history(id: String) = dao.history(id)</span>
+<span class="nc" id="L171">    val statistics = dao.statistics()</span>
+<span class="nc" id="L172">    var remoteMode = false</span>
+        private set
+
+<span class="nc" id="L175">    var api: MonitorApi =</span>
+<span class="nc" id="L176">        Retrofit.Builder()</span>
+<span class="nc" id="L177">            .baseUrl(&quot;https://demo.invalid/&quot;)</span>
+<span class="nc" id="L178">            .client(OkHttpClient.Builder().addInterceptor(authInterceptor).addInterceptor(mock).build())</span>
+<span class="nc" id="L179">            .addConverterFactory(GsonConverterFactory.create())</span>
+<span class="nc" id="L180">            .build()</span>
+<span class="nc" id="L181">            .create(MonitorApi::class.java)</span>
+
+    fun configure(url: String) {
+<span class="nc bnc" id="L184" title="All 2 branches missed.">        val useRemote = url.isNotBlank()</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">        if (useRemote) {</span>
+<span class="nc" id="L186">            val uri = java.net.URI(url)</span>
+<span class="nc bnc" id="L187" title="All 2 branches missed.">            require(</span>
+<span class="nc bnc" id="L188" title="All 2 branches missed.">                uri.scheme == &quot;https&quot; ||</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">                    (uri.scheme == &quot;http&quot; &amp;&amp;</span>
+<span class="nc bnc" id="L190" title="All 2 branches missed.">                        uri.host in listOf(&quot;10.0.2.2&quot;, &quot;127.0.0.1&quot;, &quot;localhost&quot;))</span>
+            ) {
+<span class="nc" id="L192">                &quot;Потрібен HTTPS або локальний тестовий сервер&quot;</span>
+            }
+        }
+<span class="nc" id="L195">        val client =</span>
+<span class="nc" id="L196">            OkHttpClient.Builder().addInterceptor(authInterceptor)</span>
+<span class="nc" id="L197">                .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)</span>
+<span class="nc" id="L198">                .readTimeout(10, java.util.concurrent.TimeUnit.SECONDS)</span>
+<span class="nc bnc" id="L199" title="All 2 branches missed.">        if (!useRemote) client.addInterceptor(mock)</span>
+<span class="nc" id="L200">        api =</span>
+<span class="nc" id="L201">            Retrofit.Builder()</span>
+<span class="nc bnc" id="L202" title="All 2 branches missed.">                .baseUrl(if (useRemote) url.trimEnd('/') + &quot;/&quot; else &quot;https://demo.invalid/&quot;)</span>
+<span class="nc" id="L203">                .client(client.build())</span>
+<span class="nc" id="L204">                .addConverterFactory(GsonConverterFactory.create())</span>
+<span class="nc" id="L205">                .build()</span>
+<span class="nc" id="L206">                .create(MonitorApi::class.java)</span>
+<span class="nc" id="L207">        remoteMode = useRemote</span>
+<span class="nc" id="L208">    }</span>
+
+<span class="nc" id="L210">    suspend fun login(body: LoginRequest): Session { checkNetwork(); return api.login(body).also(::rememberSession) }</span>
+<span class="nc" id="L211">    suspend fun register(body: RegistrationRequest): Session { checkNetwork(); return api.register(body).also(::rememberSession) }</span>
+    private fun checkNetwork() {
+<span class="nc bnc" id="L213" title="All 2 branches missed.">        if (!remoteMode) return</span>
+<span class="nc" id="L214">        val cm =</span>
+<span class="nc" id="L215">            context.getSystemService(Context.CONNECTIVITY_SERVICE)</span>
+                as android.net.ConnectivityManager
+<span class="nc" id="L217">        val capabilities = cm.getNetworkCapabilities(cm.activeNetwork)</span>
+<span class="nc bnc" id="L218" title="All 2 branches missed.">        require(</span>
+<span class="nc bnc" id="L219" title="All 4 branches missed.">            capabilities?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET) ==</span>
+<span class="nc" id="L220">                true</span>
+        ) {
+<span class="nc" id="L222">            &quot;Немає підключення до мережі&quot;</span>
+        }
+<span class="nc" id="L224">    }</span>
+
+    suspend fun save(m: Measurement) {
+<span class="nc bnc" id="L227" title="All 4 branches missed.">        require(MonitorLogic.validate(m) == null) { MonitorLogic.validate(m)!! }</span>
+<span class="nc" id="L228">        dao.upsert(m)</span>
+<span class="nc" id="L229">    }</span>
+
+<span class="nc" id="L231">    suspend fun delete(id: String) = dao.delete(id)</span>
+
+    suspend fun import(rows: List&lt;Measurement&gt;) {
+<span class="nc bnc" id="L234" title="All 4 branches missed.">        rows.forEach { require(MonitorLogic.validate(it) == null) }</span>
+<span class="nc" id="L235">        dao.upsertAll(rows)</span>
+<span class="nc" id="L236">    }</span>
+
+<span class="nc" id="L238">    suspend fun sync(token: String) {</span>
+<span class="nc" id="L239">        checkNetwork()</span>
+<span class="nc" id="L240">        val rows = api.measurements(&quot;Bearer $token&quot;)</span>
+<span class="nc bnc" id="L241" title="All 4 branches missed.">        require(rows.all { MonitorLogic.validate(it) == null }) { &quot;API повернув некоректні дані&quot; }</span>
+<span class="nc" id="L242">        dao.upsertAll(rows)</span>
+<span class="nc" id="L243">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

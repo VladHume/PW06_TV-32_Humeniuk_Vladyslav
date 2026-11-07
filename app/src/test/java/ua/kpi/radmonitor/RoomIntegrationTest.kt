@@ -1,4 +1,11 @@
 package ua.kpi.radmonitor
+import ua.kpi.radmonitor.*
+import ua.kpi.radmonitor.domain.*
+import ua.kpi.radmonitor.data.*
+import ua.kpi.radmonitor.viewmodel.*
+import ua.kpi.radmonitor.device.*
+import ua.kpi.radmonitor.ui.*
+
 
 import android.content.Context
 import androidx.room.Room
@@ -30,7 +37,10 @@ class RoomIntegrationTest {
             assertEquals(1, dao.observe().first().size)
             dao.upsert(m.copy(doseRate = .2))
             assertEquals(.2, dao.observe().first().single().doseRate, 0.0)
+            assertEquals(2, dao.history("test").first().size)
+            assertEquals(.2, dao.statistics().first().single().average, 0.0)
             dao.delete("test")
+            assertTrue(dao.history("test").first().isEmpty())
             assertTrue(dao.observe().first().isEmpty())
         } finally {
             db.close()

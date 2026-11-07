@@ -1,0 +1,914 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="uk"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Screens.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">ua.kpi.radmonitor.ui</a> &gt; <span class="el_source">Screens.kt</span></div><h1>Screens.kt</h1><pre class="source lang-java linenums">package ua.kpi.radmonitor.ui
+import ua.kpi.radmonitor.*
+import ua.kpi.radmonitor.R
+import ua.kpi.radmonitor.domain.*
+import ua.kpi.radmonitor.data.*
+import ua.kpi.radmonitor.viewmodel.*
+import ua.kpi.radmonitor.device.*
+import ua.kpi.radmonitor.ui.*
+
+
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.location.*
+import android.os.Build
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.*
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.*
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import kotlin.math.roundToInt
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.Marker
+
+
+<span class="nc" id="L62">private val Green = Color(0xFF14675C)</span>
+
+/** Compose-компонент MonitorApp: читає стан і передає події у ViewModel або callback. */
+@Composable
+<span class="nc bnc" id="L66" title="All 18 branches missed.">fun MonitorApp(vm: MonitorViewModel = viewModel()) {</span>
+<span class="nc" id="L67">    val dark by vm.dark.collectAsStateWithLifecycle()</span>
+<span class="nc" id="L68">    val session by vm.session.collectAsStateWithLifecycle()</span>
+<span class="nc" id="L69">    val busy by vm.busy.collectAsStateWithLifecycle()</span>
+<span class="nc" id="L70">    val message by vm.message.collectAsStateWithLifecycle()</span>
+<span class="nc" id="L71">    val nav = rememberNavController()</span>
+<span class="nc" id="L72">    val snack = remember { SnackbarHostState() }</span>
+<span class="nc bnc" id="L73" title="All 6 branches missed.">    LaunchedEffect(message) {</span>
+<span class="nc bnc" id="L74" title="All 4 branches missed.">        if (message.isNotBlank()) {</span>
+<span class="nc" id="L75">            snack.showSnackbar(message)</span>
+<span class="nc" id="L76">            vm.message.value = &quot;&quot;</span>
+        }
+<span class="nc" id="L78">    }</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">    MaterialTheme(</span>
+        colorScheme =
+<span class="nc bnc" id="L81" title="All 2 branches missed.">            if (dark) darkColorScheme(primary = Color(0xFF7CCBB9))</span>
+<span class="nc" id="L82">            else lightColorScheme(primary = Green, background = Color(0xFFF4F7F5))</span>
+<span class="nc" id="L83">    ) {</span>
+<span class="nc bnc" id="L84" title="All 16 branches missed.">        Scaffold(snackbarHost = { SnackbarHost(snack) }) { padding -&gt;</span>
+<span class="nc bnc" id="L85" title="All 6 branches missed.">            Column(Modifier.fillMaxSize().padding(padding)) {</span>
+<span class="nc" id="L86">                Row(</span>
+<span class="nc" id="L87">                    Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp),</span>
+<span class="nc" id="L88">                    verticalAlignment = Alignment.CenterVertically,</span>
+                ) {
+<span class="nc" id="L90">                    Image(</span>
+<span class="nc" id="L91">                        painterResource(R.drawable.station),</span>
+<span class="nc" id="L92">                        &quot;Емблема навчальної станції&quot;,</span>
+<span class="nc" id="L93">                        Modifier.size(42.dp),</span>
+                    )
+<span class="nc" id="L95">                    Column(Modifier.weight(1f).padding(start = 12.dp)) {</span>
+<span class="nc" id="L96">                        Text(&quot;АЕС · Моніторинг&quot;, fontWeight = FontWeight.Bold, fontSize = 20.sp)</span>
+<span class="nc" id="L97">                        Text(</span>
+<span class="nc" id="L98">                            &quot;Варіант 4 · Практична ${BuildConfig.PRACTICAL}&quot;,</span>
+<span class="nc" id="L99">                            style = MaterialTheme.typography.bodySmall,</span>
+                        )
+<span class="nc" id="L101">                    }</span>
+<span class="nc bnc" id="L102" title="All 10 branches missed.">                    if (session != null) TextButton(onClick = { vm.logout() }) { Text(&quot;Вийти&quot;) }</span>
+<span class="nc" id="L103">                }</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">                if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">                if (session == null) AuthScreen(vm)</span>
+<span class="nc" id="L106">                else {</span>
+<span class="nc" id="L107">                    if (BuildConfig.PRACTICAL &gt;= 2)</span>
+<span class="nc" id="L108">                        Row(</span>
+<span class="nc" id="L109">                            Modifier.horizontalScroll(rememberScrollState())</span>
+<span class="nc" id="L110">                                .padding(horizontal = 12.dp)</span>
+                        ) {
+<span class="nc" id="L112">                            listOf(</span>
+<span class="nc" id="L113">                                    &quot;Огляд&quot; to &quot;home&quot;,</span>
+<span class="nc" id="L114">                                    &quot;Журнал&quot; to &quot;records&quot;,</span>
+<span class="nc" id="L115">                                    &quot;Мапа&quot; to &quot;map&quot;,</span>
+<span class="nc" id="L116">                                    &quot;Сенсори&quot; to &quot;sensors&quot;,</span>
+<span class="nc" id="L117">                                    &quot;Файли&quot; to &quot;files&quot;,</span>
+                                )
+<span class="nc" id="L119">                                .filter { (_, route) -&gt;</span>
+<span class="nc bnc" id="L120" title="All 10 branches missed.">                                    when (route) {</span>
+<span class="nc" id="L121">                                        &quot;map&quot; -&gt; BuildConfig.PRACTICAL &gt;= 4</span>
+<span class="nc" id="L122">                                        &quot;sensors&quot; -&gt; BuildConfig.PRACTICAL &gt;= 5</span>
+<span class="nc" id="L123">                                        &quot;files&quot; -&gt; BuildConfig.PRACTICAL &gt;= 6</span>
+<span class="nc" id="L124">                                        else -&gt; true</span>
+<span class="nc" id="L125">                                    }</span>
+                                }
+<span class="nc" id="L127">                                .forEach { (title, route) -&gt;</span>
+<span class="nc" id="L128">                                    TextButton(</span>
+<span class="nc" id="L129">                                        onClick = { nav.navigate(route) { launchSingleTop = true } }</span>
+<span class="nc" id="L130">                                    ) {</span>
+<span class="nc bnc" id="L131" title="All 8 branches missed.">                                        Text(title)</span>
+<span class="nc" id="L132">                                    }</span>
+<span class="nc" id="L133">                                }</span>
+<span class="nc" id="L134">                        }</span>
+<span class="nc" id="L135">                    NavHost(nav, startDestination = &quot;home&quot;, modifier = Modifier.weight(1f)) {</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">                        composable(&quot;home&quot;) { Dashboard(vm) }</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">                        composable(&quot;records&quot;) { RecordsScreen(vm, { nav.navigate(&quot;detail/${android.net.Uri.encode(it)}&quot;) }, { vm.selectedId.value = it; nav.navigate(&quot;map&quot;) }) }</span>
+<span class="nc bnc" id="L138" title="All 6 branches missed.">                        composable(&quot;detail/{id}&quot;) { entry -&gt; DetailScreen(vm, entry.arguments?.getString(&quot;id&quot;).orEmpty()) { vm.selectedId.value = it; nav.navigate(&quot;map&quot;) } }</span>
+<span class="nc bnc" id="L139" title="All 2 branches missed.">                        composable(&quot;map&quot;) { MapScreen(vm) { vm.selectedId.value = it; nav.navigate(&quot;records&quot;) { launchSingleTop = true } } }</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">                        composable(&quot;sensors&quot;) { SensorsScreen(vm) }</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">                        composable(&quot;files&quot;) { FilesScreen(vm) }</span>
+<span class="nc" id="L142">                    }</span>
+                }
+<span class="nc" id="L144">            }</span>
+<span class="nc" id="L145">        }</span>
+<span class="nc" id="L146">    }</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">}</span>
+
+/** Compose-компонент AuthScreen: читає стан і передає події у ViewModel або callback. */
+@Composable
+<span class="nc bnc" id="L151" title="All 12 branches missed.">private fun AuthScreen(vm: MonitorViewModel) {</span>
+<span class="nc" id="L152">    var registration by rememberSaveable { mutableStateOf(false) }</span>
+<span class="nc" id="L153">    var email by rememberSaveable { mutableStateOf(&quot;operator@demo.ua&quot;) }</span>
+<span class="nc" id="L154">    var password by rememberSaveable { mutableStateOf(&quot;Demo12345&quot;) }</span>
+<span class="nc" id="L155">    var confirm by rememberSaveable { mutableStateOf(&quot;&quot;) }</span>
+<span class="nc" id="L156">    var name by rememberSaveable { mutableStateOf(&quot;&quot;) }</span>
+<span class="nc" id="L157">    val busy by vm.busy.collectAsStateWithLifecycle()</span>
+<span class="nc" id="L158">    Column(</span>
+<span class="nc" id="L159">        Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp),</span>
+<span class="nc" id="L160">        verticalArrangement = Arrangement.spacedBy(12.dp),</span>
+    ) {
+<span class="nc" id="L162">        Text(</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">            if (registration) &quot;Реєстрація&quot; else &quot;Вхід до навчальної системи&quot;,</span>
+<span class="nc" id="L164">            style = MaterialTheme.typography.headlineSmall,</span>
+        )
+<span class="nc" id="L166">        Text(</span>
+<span class="nc" id="L167">            &quot;Спостереження за вигаданими постами. Демонстраційний API, без підключення до реальної АЕС.&quot;</span>
+        )
+<span class="nc bnc" id="L169" title="All 2 branches missed.">        if (registration)</span>
+<span class="nc" id="L170">            OutlinedTextField(</span>
+<span class="nc" id="L171">                name,</span>
+<span class="nc" id="L172">                { name = it },</span>
+<span class="nc bnc" id="L173" title="All 8 branches missed.">                label = { Text(&quot;Ім’я&quot;) },</span>
+<span class="nc" id="L174">                modifier = Modifier.fillMaxWidth(),</span>
+<span class="nc" id="L175">                singleLine = true,</span>
+            )
+<span class="nc" id="L177">        OutlinedTextField(</span>
+<span class="nc" id="L178">            email,</span>
+<span class="nc" id="L179">            { email = it },</span>
+<span class="nc bnc" id="L180" title="All 8 branches missed.">            label = { Text(&quot;Email&quot;) },</span>
+<span class="nc bnc" id="L181" title="All 6 branches missed.">            isError = email.isNotEmpty() &amp;&amp; !email.contains(&quot;@&quot;),</span>
+<span class="nc bnc" id="L182" title="All 14 branches missed.">            supportingText = { Text(if (email.isNotEmpty() &amp;&amp; !email.contains(&quot;@&quot;)) &quot;Введіть коректний email&quot; else &quot;Формат: ім’я@домен.ua&quot;) },</span>
+<span class="nc" id="L183">            modifier = Modifier.fillMaxWidth(),</span>
+<span class="nc" id="L184">            singleLine = true,</span>
+        )
+<span class="nc" id="L186">        OutlinedTextField(</span>
+<span class="nc" id="L187">            password,</span>
+<span class="nc" id="L188">            { password = it },</span>
+<span class="nc bnc" id="L189" title="All 8 branches missed.">            label = { Text(&quot;Пароль&quot;) },</span>
+<span class="nc bnc" id="L190" title="All 8 branches missed.">            supportingText = { Text(&quot;Щонайменше 8 символів&quot;) },</span>
+<span class="nc" id="L191">            visualTransformation = PasswordVisualTransformation(),</span>
+<span class="nc" id="L192">            modifier = Modifier.fillMaxWidth(),</span>
+<span class="nc" id="L193">            singleLine = true,</span>
+        )
+<span class="nc bnc" id="L195" title="All 2 branches missed.">        if (registration)</span>
+<span class="nc" id="L196">            OutlinedTextField(</span>
+<span class="nc" id="L197">                confirm,</span>
+<span class="nc" id="L198">                { confirm = it },</span>
+<span class="nc bnc" id="L199" title="All 8 branches missed.">                label = { Text(&quot;Підтвердження пароля&quot;) },</span>
+<span class="nc" id="L200">                visualTransformation = PasswordVisualTransformation(),</span>
+<span class="nc" id="L201">                modifier = Modifier.fillMaxWidth(),</span>
+<span class="nc" id="L202">                singleLine = true,</span>
+            )
+<span class="nc" id="L204">        Button(</span>
+<span class="nc" id="L205">            onClick = {</span>
+<span class="nc bnc" id="L206" title="All 2 branches missed.">                if (registration) vm.register(name, email, password, confirm)</span>
+<span class="nc" id="L207">                else vm.login(email, password)</span>
+<span class="nc" id="L208">            },</span>
+<span class="nc bnc" id="L209" title="All 2 branches missed.">            enabled = !busy,</span>
+<span class="nc bnc" id="L210" title="All 6 branches missed.">            modifier = Modifier.fillMaxWidth(),</span>
+<span class="nc" id="L211">        ) {</span>
+<span class="nc bnc" id="L212" title="All 10 branches missed.">            Text(if (registration) &quot;Зареєструватися&quot; else &quot;Увійти&quot;)</span>
+<span class="nc" id="L213">        }</span>
+<span class="nc bnc" id="L214" title="All 2 branches missed.">        TextButton(onClick = { registration = !registration }) {</span>
+<span class="nc bnc" id="L215" title="All 10 branches missed.">            Text(if (registration) &quot;Повернутися до входу&quot; else &quot;Створити обліковий запис&quot;)</span>
+<span class="nc" id="L216">        }</span>
+<span class="nc" id="L217">        Text(</span>
+<span class="nc" id="L218">            &quot;Оператор: operator@demo.ua\nСпостерігач: viewer@demo.ua\nПароль обох: Demo12345&quot;,</span>
+<span class="nc" id="L219">            style = MaterialTheme.typography.bodySmall,</span>
+        )
+<span class="nc" id="L221">    }</span>
+<span class="nc bnc" id="L222" title="All 2 branches missed.">}</span>
+
+/** Compose-компонент Dashboard: читає стан і передає події у ViewModel або callback. */
+@Composable
+<span class="nc bnc" id="L226" title="All 12 branches missed.">private fun Dashboard(vm: MonitorViewModel) {</span>
+<span class="nc" id="L227">    val records by vm.all.collectAsStateWithLifecycle()</span>
+<span class="nc" id="L228">    val dark by vm.dark.collectAsStateWithLifecycle()</span>
+<span class="nc" id="L229">    var rate by rememberSaveable { mutableStateOf(&quot;0.12&quot;) }</span>
+<span class="nc" id="L230">    var hours by rememberSaveable { mutableStateOf(&quot;8&quot;) }</span>
+<span class="nc" id="L231">    var result by rememberSaveable { mutableStateOf(&quot;&quot;) }</span>
+<span class="nc" id="L232">    var scenario by rememberSaveable { mutableStateOf(&quot;Успіх&quot;) }</span>
+<span class="nc" id="L233">    var apiUrl by rememberSaveable { mutableStateOf(&quot;&quot;) }</span>
+<span class="nc" id="L234">    var simulated by rememberSaveable { mutableStateOf(.12f) }</span>
+<span class="nc" id="L235">    val animated by animateFloatAsState(simulated, label = &quot;reading&quot;)</span>
+<span class="nc" id="L236">    Column(</span>
+<span class="nc" id="L237">        Modifier.verticalScroll(rememberScrollState()).padding(20.dp),</span>
+<span class="nc" id="L238">        verticalArrangement = Arrangement.spacedBy(14.dp),</span>
+    ) {
+<span class="nc" id="L240">        Text(</span>
+<span class="nc" id="L241">            &quot;Огляд станції&quot;,</span>
+<span class="nc" id="L242">            style = MaterialTheme.typography.headlineMedium,</span>
+<span class="nc" id="L243">            fontWeight = FontWeight.Bold,</span>
+        )
+<span class="nc" id="L245">        Text(</span>
+<span class="nc" id="L246">            &quot;Навчальна модель · дані не є вимірюваннями реальної станції&quot;,</span>
+<span class="nc" id="L247">            style = MaterialTheme.typography.bodySmall,</span>
+        )
+<span class="nc" id="L249">        Card(Modifier.fillMaxWidth()) {</span>
+<span class="nc bnc" id="L250" title="All 6 branches missed.">            Column(Modifier.padding(20.dp)) {</span>
+<span class="nc" id="L251">                Text(&quot;Демонстраційний показник&quot;, style = MaterialTheme.typography.labelLarge)</span>
+<span class="nc" id="L252">                Text(</span>
+<span class="nc" id="L253">                    &quot;%.3f мкЗв/год&quot;.format(animated),</span>
+<span class="nc" id="L254">                    style = MaterialTheme.typography.headlineLarge,</span>
+<span class="nc" id="L255">                    color = MaterialTheme.colorScheme.primary,</span>
+                )
+<span class="nc" id="L257">                Text(&quot;Потужність: ${980+(simulated*100).roundToInt()} МВт&quot;)</span>
+<span class="nc" id="L258">                Button(onClick = { simulated = (.08 + Math.random() * .30).toFloat() }) {</span>
+<span class="nc bnc" id="L259" title="All 8 branches missed.">                    Text(&quot;Оновити показник&quot;)</span>
+<span class="nc" id="L260">                }</span>
+<span class="nc" id="L261">            }</span>
+<span class="nc" id="L262">        }</span>
+<span class="nc" id="L263">        Text(&quot;Розрахунок накопиченої дози&quot;, style = MaterialTheme.typography.titleLarge)</span>
+<span class="nc" id="L264">        OutlinedTextField(</span>
+<span class="nc" id="L265">            rate,</span>
+<span class="nc" id="L266">            { rate = it },</span>
+<span class="nc bnc" id="L267" title="All 8 branches missed.">            label = { Text(&quot;Потужність дози, мкЗв/год&quot;) },</span>
+<span class="nc" id="L268">            modifier = Modifier.fillMaxWidth(),</span>
+        )
+<span class="nc bnc" id="L270" title="All 6 branches missed.">        OutlinedTextField(</span>
+<span class="nc" id="L271">            hours,</span>
+<span class="nc" id="L272">            { hours = it },</span>
+<span class="nc bnc" id="L273" title="All 8 branches missed.">            label = { Text(&quot;Тривалість, год&quot;) },</span>
+<span class="nc" id="L274">            modifier = Modifier.fillMaxWidth(),</span>
+        )
+<span class="nc" id="L276">        Button(</span>
+<span class="nc" id="L277">            onClick = {</span>
+<span class="nc" id="L278">                result =</span>
+<span class="nc" id="L279">                    runCatching {</span>
+<span class="nc" id="L280">                            &quot;D = %.3f мкЗв&quot;</span>
+<span class="nc" id="L281">                                .format(</span>
+<span class="nc" id="L282">                                    MonitorLogic.dose(</span>
+<span class="nc" id="L283">                                        rate.replace(',', '.').toDouble(),</span>
+<span class="nc" id="L284">                                        hours.replace(',', '.').toDouble(),</span>
+                                    )
+<span class="nc" id="L286">                                )</span>
+                        }
+<span class="nc bnc" id="L288" title="All 2 branches missed.">                        .getOrElse { &quot;Введіть скінченні невід’ємні числа&quot; }</span>
+<span class="nc" id="L289">            }</span>
+<span class="nc" id="L290">        ) {</span>
+<span class="nc bnc" id="L291" title="All 8 branches missed.">            Text(&quot;Розрахувати&quot;)</span>
+<span class="nc" id="L292">        }</span>
+<span class="nc bnc" id="L293" title="All 4 branches missed.">        if (result.isNotBlank()) Text(result, fontWeight = FontWeight.Bold)</span>
+<span class="nc" id="L294">        Text(&quot;D = P × t. Розрахунок стосується сталого навчального показника.&quot;)</span>
+<span class="nc" id="L295">        if (BuildConfig.PRACTICAL &gt;= 2) {</span>
+<span class="nc bnc" id="L296" title="All 6 branches missed.">            Text(&quot;Записів у журналі: ${records.size}&quot;)</span>
+<span class="nc bnc" id="L297" title="All 8 branches missed.">            Button(onClick = vm::seed) { Text(&quot;Додати демонстраційні пости&quot;) }</span>
+        }
+<span class="nc" id="L299">        if (BuildConfig.PRACTICAL &gt;= 3) {</span>
+<span class="nc" id="L300">            Text(&quot;API і обробка помилок&quot;, style = MaterialTheme.typography.titleLarge)</span>
+<span class="nc bnc" id="L301" title="All 6 branches missed.">            Choice(</span>
+<span class="nc" id="L302">                &quot;Сценарій&quot;,</span>
+<span class="nc" id="L303">                listOf(&quot;Успіх&quot;, &quot;Без мережі&quot;, &quot;HTTP 503&quot;, &quot;Хибний JSON&quot;, &quot;Сеанс завершено&quot;),</span>
+<span class="nc bnc" id="L304" title="All 6 branches missed.">                scenario,</span>
+<span class="nc" id="L305">            ) {</span>
+<span class="nc" id="L306">                scenario = it; vm.repository.mock.scenario = it</span>
+<span class="nc" id="L307">            }</span>
+<span class="nc bnc" id="L308" title="All 8 branches missed.">            Button(onClick = vm::sync) { Text(&quot;Синхронізувати API&quot;) }</span>
+        }
+<span class="nc" id="L310">        if (BuildConfig.PRACTICAL &gt;= 3) {</span>
+<span class="nc bnc" id="L311" title="All 6 branches missed.">            OutlinedTextField(</span>
+<span class="nc" id="L312">                apiUrl,</span>
+<span class="nc" id="L313">                { apiUrl = it },</span>
+<span class="nc bnc" id="L314" title="All 8 branches missed.">                label = { Text(&quot;URL реального API або порожньо для mock&quot;) },</span>
+<span class="nc" id="L315">                modifier = Modifier.fillMaxWidth(),</span>
+            )
+<span class="nc bnc" id="L317" title="All 8 branches missed.">            TextButton(onClick = { vm.configureApi(apiUrl) }) { Text(&quot;Застосувати джерело API&quot;) }</span>
+        }
+<span class="nc" id="L319">        Row(verticalAlignment = Alignment.CenterVertically) {</span>
+<span class="nc bnc" id="L320" title="All 6 branches missed.">            Switch(dark, vm::setDark)</span>
+<span class="nc" id="L321">            Text(&quot;Темна тема&quot;, Modifier.padding(start = 12.dp))</span>
+<span class="nc" id="L322">        }</span>
+<span class="nc" id="L323">    }</span>
+<span class="nc bnc" id="L324" title="All 2 branches missed.">}</span>
+
+/** Compose-компонент Choice: читає стан і передає події у ViewModel або callback. */
+@Composable
+private fun Choice(
+    label: String,
+    options: List&lt;String&gt;,
+    selected: String,
+    onSelect: (String) -&gt; Unit,
+<span class="nc bnc" id="L333" title="All 22 branches missed.">) {</span>
+<span class="nc" id="L334">    var expanded by remember { mutableStateOf(false) }</span>
+<span class="nc" id="L335">    Box {</span>
+<span class="nc bnc" id="L336" title="All 8 branches missed.">        OutlinedButton(onClick = { expanded = true }) { Text(&quot;$label: $selected&quot;) }</span>
+<span class="nc" id="L337">        DropdownMenu(expanded, { expanded = false }) {</span>
+<span class="nc bnc" id="L338" title="All 6 branches missed.">            options.forEach { item -&gt;</span>
+<span class="nc" id="L339">                DropdownMenuItem(</span>
+<span class="nc bnc" id="L340" title="All 8 branches missed.">                    text = { Text(item) },</span>
+<span class="nc" id="L341">                    onClick = {</span>
+<span class="nc" id="L342">                        onSelect(item)</span>
+<span class="nc" id="L343">                        expanded = false</span>
+<span class="nc" id="L344">                    },</span>
+                )
+<span class="nc" id="L346">            }</span>
+<span class="nc" id="L347">        }</span>
+<span class="nc" id="L348">    }</span>
+<span class="nc bnc" id="L349" title="All 2 branches missed.">}</span>
+
+/** Compose-компонент RecordsScreen: читає стан і передає події у ViewModel або callback. */
+@Composable
+<span class="nc bnc" id="L353" title="All 20 branches missed.">private fun RecordsScreen(vm: MonitorViewModel, details: (String) -&gt; Unit, map: (String) -&gt; Unit) {</span>
+<span class="nc" id="L354">    val records by vm.filtered.collectAsStateWithLifecycle()</span>
+<span class="nc" id="L355">    val query by vm.query.collectAsStateWithLifecycle()</span>
+<span class="nc" id="L356">    val type by vm.type.collectAsStateWithLifecycle()</span>
+<span class="nc" id="L357">    val sort by vm.sort.collectAsStateWithLifecycle()</span>
+<span class="nc" id="L358">    val session by vm.session.collectAsStateWithLifecycle()</span>
+<span class="nc" id="L359">    val selected by vm.selectedId.collectAsStateWithLifecycle()</span>
+<span class="nc" id="L360">    val status by vm.statusFilter.collectAsStateWithLifecycle()</span>
+<span class="nc" id="L361">    val power by vm.minimumPower.collectAsStateWithLifecycle()</span>
+<span class="nc" id="L362">    var editing by remember { mutableStateOf&lt;Measurement?&gt;(null) }</span>
+<span class="nc" id="L363">    var showForm by remember { mutableStateOf(false) }</span>
+<span class="nc bnc" id="L364" title="All 2 branches missed.">    if (showForm)</span>
+<span class="nc bnc" id="L365" title="All 6 branches missed.">        MeasurementForm(editing, { showForm = false }) {</span>
+<span class="nc" id="L366">            vm.save(it)</span>
+<span class="nc" id="L367">            showForm = false</span>
+<span class="nc" id="L368">        }</span>
+<span class="nc bnc" id="L369" title="All 2 branches missed.">    LazyColumn(</span>
+<span class="nc" id="L370">        Modifier.fillMaxSize().padding(horizontal = 20.dp),</span>
+<span class="nc bnc" id="L371" title="All 10 branches missed.">        verticalArrangement = Arrangement.spacedBy(10.dp),</span>
+<span class="nc" id="L372">        contentPadding = PaddingValues(bottom = 24.dp),</span>
+<span class="nc" id="L373">    ) {</span>
+<span class="nc bnc" id="L374" title="All 8 branches missed.">        item { Text(&quot;Журнал постів&quot;, style = MaterialTheme.typography.headlineMedium) }</span>
+<span class="nc" id="L375">        if (BuildConfig.PRACTICAL &gt;= 2) {</span>
+<span class="nc" id="L376">            item {</span>
+<span class="nc bnc" id="L377" title="All 8 branches missed.">                OutlinedTextField(</span>
+<span class="nc" id="L378">                    query,</span>
+<span class="nc" id="L379">                    { vm.query.value = it },</span>
+<span class="nc bnc" id="L380" title="All 8 branches missed.">                    label = { Text(&quot;Пошук за назвою&quot;) },</span>
+<span class="nc" id="L381">                    modifier = Modifier.fillMaxWidth(),</span>
+<span class="nc" id="L382">                )</span>
+<span class="nc" id="L383">            }</span>
+<span class="nc" id="L384">            item {</span>
+<span class="nc bnc" id="L385" title="All 6 branches missed.">                Row(Modifier.horizontalScroll(rememberScrollState())) {</span>
+<span class="nc" id="L386">                    Choice(&quot;Тип&quot;, listOf(&quot;Усі&quot;, &quot;Периметр&quot;, &quot;Зал&quot;, &quot;Контроль&quot;), type) {</span>
+<span class="nc" id="L387">                        vm.type.value = it</span>
+<span class="nc" id="L388">                    }</span>
+<span class="nc" id="L389">                    Spacer(Modifier.width(8.dp))</span>
+<span class="nc" id="L390">                    Choice(&quot;Порядок&quot;, listOf(&quot;Дата&quot;, &quot;Назва&quot;, &quot;Тип&quot;, &quot;Показник&quot;, &quot;Потужність&quot;), sort) {</span>
+<span class="nc" id="L391">                        vm.sort.value = it</span>
+<span class="nc" id="L392">                    }</span>
+<span class="nc" id="L393">                }</span>
+<span class="nc" id="L394">            }</span>
+        }
+<span class="nc" id="L396">        item {</span>
+<span class="nc bnc" id="L397" title="All 6 branches missed.">            Choice(&quot;Стан&quot;, listOf(&quot;Усі&quot;, &quot;Поріг перевищено&quot;, &quot;У межах порога&quot;), status) { vm.statusFilter.value = it }</span>
+<span class="nc bnc" id="L398" title="All 10 branches missed.">            OutlinedTextField(power, { vm.minimumPower.value = it }, label = { Text(&quot;Мінімальна потужність, МВт&quot;) }, singleLine = true)</span>
+<span class="nc" id="L399">        }</span>
+<span class="nc" id="L400">        item {</span>
+<span class="nc bnc" id="L401" title="All 10 branches missed.">            if (session?.role == &quot;operator&quot;)</span>
+<span class="nc bnc" id="L402" title="All 2 branches missed.">                Button(</span>
+<span class="nc" id="L403">                    onClick = {</span>
+<span class="nc" id="L404">                        editing = null</span>
+<span class="nc" id="L405">                        showForm = true</span>
+<span class="nc" id="L406">                    }</span>
+<span class="nc" id="L407">                ) {</span>
+<span class="nc bnc" id="L408" title="All 8 branches missed.">                    Text(&quot;Новий запис&quot;)</span>
+<span class="nc" id="L409">                }</span>
+<span class="nc" id="L410">        }</span>
+<span class="nc bnc" id="L411" title="All 2 branches missed.">        if (records.isEmpty())</span>
+<span class="nc" id="L412">            item {</span>
+<span class="nc bnc" id="L413" title="All 8 branches missed.">                Text(</span>
+<span class="nc" id="L414">                    &quot;Записів немає. Додайте пост або змініть фільтри.&quot;,</span>
+<span class="nc" id="L415">                    Modifier.padding(vertical = 20.dp),</span>
+<span class="nc" id="L416">                )</span>
+<span class="nc" id="L417">            }</span>
+<span class="nc" id="L418">        items(records, key = { it.id }) { m -&gt;</span>
+<span class="nc" id="L419">            Card(Modifier.fillMaxWidth().clickable { details(m.id) }, colors = CardDefaults.cardColors(containerColor = if (selected == m.id) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)) {</span>
+<span class="nc bnc" id="L420" title="All 6 branches missed.">                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {</span>
+<span class="nc" id="L421">                    Row {</span>
+<span class="nc" id="L422">                        Text(m.name, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))</span>
+<span class="nc" id="L423">                        Text(m.type, style = MaterialTheme.typography.labelMedium)</span>
+<span class="nc" id="L424">                    }</span>
+<span class="nc" id="L425">                    Text(</span>
+<span class="nc" id="L426">                        &quot;%.3f мкЗв/год · %.1f МВт&quot;.format(m.doseRate, m.powerMw),</span>
+<span class="nc" id="L427">                        style = MaterialTheme.typography.titleLarge,</span>
+                    )
+<span class="nc" id="L429">                    Text(</span>
+<span class="nc" id="L430">                        SimpleDateFormat(&quot;dd.MM.yyyy HH:mm&quot;, Locale.getDefault())</span>
+<span class="nc" id="L431">                            .format(Date(m.timestamp))</span>
+                    )
+<span class="nc" id="L433">                    Text(&quot;${m.type}: навчальний пост контролю радіаційного фону&quot;)</span>
+<span class="nc bnc" id="L434" title="All 8 branches missed.">                    TextButton(onClick = { details(m.id) }) { Text(&quot;Деталі ${m.name}&quot;) }</span>
+<span class="nc bnc" id="L435" title="All 8 branches missed.">                    if (BuildConfig.PRACTICAL &gt;= 4) TextButton(onClick = { map(m.id) }) { Text(&quot;На мапі ${m.name}&quot;) }</span>
+<span class="nc bnc" id="L436" title="All 2 branches missed.">                    if (m.doseRate &gt; MonitorLogic.DEMO_THRESHOLD)</span>
+<span class="nc" id="L437">                        Text(</span>
+<span class="nc" id="L438">                            &quot;Вище навчального порога 0,30&quot;,</span>
+<span class="nc" id="L439">                            color = MaterialTheme.colorScheme.error,</span>
+                        )
+<span class="nc bnc" id="L441" title="All 4 branches missed.">                    if (session?.role == &quot;operator&quot;)</span>
+<span class="nc" id="L442">                        Row {</span>
+<span class="nc" id="L443">                            TextButton(</span>
+<span class="nc" id="L444">                                onClick = {</span>
+<span class="nc" id="L445">                                    editing = m</span>
+<span class="nc" id="L446">                                    showForm = true</span>
+<span class="nc" id="L447">                                }</span>
+<span class="nc" id="L448">                            ) {</span>
+<span class="nc bnc" id="L449" title="All 8 branches missed.">                                Text(&quot;Редагувати&quot;)</span>
+<span class="nc" id="L450">                            }</span>
+<span class="nc bnc" id="L451" title="All 8 branches missed.">                            TextButton(onClick = { vm.delete(m) }) { Text(&quot;Видалити&quot;) }</span>
+<span class="nc" id="L452">                        }</span>
+<span class="nc" id="L453">                }</span>
+<span class="nc" id="L454">            }</span>
+        }
+<span class="nc" id="L456">    }</span>
+<span class="nc bnc" id="L457" title="All 2 branches missed.">}</span>
+
+/** Compose-компонент MeasurementForm: читає стан і передає події у ViewModel або callback. */
+@Composable
+private fun MeasurementForm(
+    initial: Measurement?,
+    dismiss: () -&gt; Unit,
+    save: (Measurement) -&gt; Unit,
+<span class="nc bnc" id="L465" title="All 18 branches missed.">) {</span>
+<span class="nc bnc" id="L466" title="All 4 branches missed.">    var name by remember { mutableStateOf(initial?.name ?: &quot;&quot;) }</span>
+<span class="nc bnc" id="L467" title="All 4 branches missed.">    var type by remember { mutableStateOf(initial?.type ?: &quot;Периметр&quot;) }</span>
+<span class="nc bnc" id="L468" title="All 4 branches missed.">    var rate by remember { mutableStateOf(initial?.doseRate?.toString() ?: &quot;0.12&quot;) }</span>
+<span class="nc bnc" id="L469" title="All 4 branches missed.">    var power by remember { mutableStateOf(initial?.powerMw?.toString() ?: &quot;1000&quot;) }</span>
+<span class="nc bnc" id="L470" title="All 4 branches missed.">    var lat by remember { mutableStateOf(initial?.latitude?.toString() ?: &quot;50.45&quot;) }</span>
+<span class="nc bnc" id="L471" title="All 4 branches missed.">    var lon by remember { mutableStateOf(initial?.longitude?.toString() ?: &quot;30.52&quot;) }</span>
+<span class="nc" id="L472">    var error by remember { mutableStateOf(&quot;&quot;) }</span>
+<span class="nc bnc" id="L473" title="All 2 branches missed.">    AlertDialog(</span>
+<span class="nc" id="L474">        onDismissRequest = dismiss,</span>
+<span class="nc bnc" id="L475" title="All 10 branches missed.">        title = { Text(if (initial == null) &quot;Новий пост&quot; else &quot;Редагування поста&quot;) },</span>
+<span class="nc" id="L476">        text = {</span>
+<span class="nc bnc" id="L477" title="All 6 branches missed.">            Column(</span>
+<span class="nc" id="L478">                Modifier.verticalScroll(rememberScrollState()),</span>
+<span class="nc" id="L479">                verticalArrangement = Arrangement.spacedBy(8.dp),</span>
+            ) {
+<span class="nc" id="L481">                OutlinedTextField(</span>
+<span class="nc" id="L482">                    name,</span>
+<span class="nc" id="L483">                    { name = it },</span>
+<span class="nc bnc" id="L484" title="All 8 branches missed.">                    label = { Text(&quot;Назва поста&quot;) },</span>
+<span class="nc" id="L485">                    singleLine = true,</span>
+                )
+<span class="nc" id="L487">                Choice(&quot;Тип&quot;, listOf(&quot;Периметр&quot;, &quot;Зал&quot;, &quot;Контроль&quot;), type) { type = it }</span>
+<span class="nc" id="L488">                OutlinedTextField(</span>
+<span class="nc" id="L489">                    rate,</span>
+<span class="nc" id="L490">                    { rate = it },</span>
+<span class="nc bnc" id="L491" title="All 8 branches missed.">                    label = { Text(&quot;мкЗв/год&quot;) },</span>
+<span class="nc" id="L492">                    singleLine = true,</span>
+                )
+<span class="nc bnc" id="L494" title="All 8 branches missed.">                OutlinedTextField(power, { power = it }, label = { Text(&quot;МВт&quot;) }, singleLine = true)</span>
+<span class="nc bnc" id="L495" title="All 8 branches missed.">                OutlinedTextField(lat, { lat = it }, label = { Text(&quot;Широта&quot;) }, singleLine = true)</span>
+<span class="nc bnc" id="L496" title="All 8 branches missed.">                OutlinedTextField(lon, { lon = it }, label = { Text(&quot;Довгота&quot;) }, singleLine = true)</span>
+<span class="nc bnc" id="L497" title="All 4 branches missed.">                if (error.isNotBlank()) Text(error, color = MaterialTheme.colorScheme.error)</span>
+<span class="nc" id="L498">            }</span>
+<span class="nc" id="L499">        },</span>
+<span class="nc" id="L500">        confirmButton = {</span>
+<span class="nc bnc" id="L501" title="All 8 branches missed.">            Button(</span>
+<span class="nc" id="L502">                onClick = {</span>
+<span class="nc" id="L503">                    try {</span>
+<span class="nc" id="L504">                        val m =</span>
+<span class="nc" id="L505">                            Measurement(</span>
+<span class="nc bnc" id="L506" title="All 4 branches missed.">                                initial?.id ?: java.util.UUID.randomUUID().toString(),</span>
+<span class="nc" id="L507">                                name.trim(),</span>
+<span class="nc" id="L508">                                type,</span>
+<span class="nc" id="L509">                                rate.replace(',', '.').toDouble(),</span>
+<span class="nc" id="L510">                                power.replace(',', '.').toDouble(),</span>
+<span class="nc" id="L511">                                lat.replace(',', '.').toDouble(),</span>
+<span class="nc" id="L512">                                lon.replace(',', '.').toDouble(),</span>
+                            )
+<span class="nc bnc" id="L514" title="All 2 branches missed.">                        error = MonitorLogic.validate(m) ?: &quot;&quot;</span>
+<span class="nc bnc" id="L515" title="All 4 branches missed.">                        if (error.isEmpty()) save(m)</span>
+<span class="nc" id="L516">                    } catch (_: NumberFormatException) {</span>
+<span class="nc" id="L517">                        error = &quot;Перевірте числові поля&quot;</span>
+                    }
+<span class="nc" id="L519">                }</span>
+<span class="nc" id="L520">            ) {</span>
+<span class="nc bnc" id="L521" title="All 8 branches missed.">                Text(&quot;Зберегти&quot;)</span>
+<span class="nc" id="L522">            }</span>
+<span class="nc" id="L523">        },</span>
+<span class="nc bnc" id="L524" title="All 16 branches missed.">        dismissButton = { TextButton(onClick = dismiss) { Text(&quot;Скасувати&quot;) } },</span>
+    )
+<span class="nc bnc" id="L526" title="All 2 branches missed.">}</span>
+
+/** Compose-компонент MapScreen: читає стан і передає події у ViewModel або callback. */
+@Composable
+<span class="nc bnc" id="L530" title="All 16 branches missed.">private fun MapScreen(vm: MonitorViewModel, select: (String) -&gt; Unit) {</span>
+<span class="nc" id="L531">    val c = LocalContext.current</span>
+<span class="nc" id="L532">    val records by vm.filtered.collectAsStateWithLifecycle()</span>
+<span class="nc" id="L533">    val selected by vm.selectedId.collectAsStateWithLifecycle()</span>
+<span class="nc" id="L534">    var location by remember { mutableStateOf&lt;Location?&gt;(null) }</span>
+<span class="nc" id="L535">    var permission by remember {</span>
+<span class="nc" id="L536">        mutableStateOf(</span>
+<span class="nc bnc" id="L537" title="All 2 branches missed.">            ContextCompat.checkSelfPermission(c, Manifest.permission.ACCESS_COARSE_LOCATION) ==</span>
+                PackageManager.PERMISSION_GRANTED
+<span class="nc" id="L539">        )</span>
+    }
+<span class="nc" id="L541">    val launcher =</span>
+<span class="nc bnc" id="L542" title="All 6 branches missed.">        rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { r</span>
+            -&gt;
+<span class="nc" id="L544">            permission = r.values.any { it }</span>
+<span class="nc bnc" id="L545" title="All 2 branches missed.">            if (!permission)</span>
+<span class="nc" id="L546">                vm.message.value = &quot;Доступ до геолокації відхилено. Пости залишаються доступними.&quot;</span>
+<span class="nc" id="L547">        }</span>
+<span class="nc" id="L548">    val map = remember {</span>
+<span class="nc" id="L549">        org.osmdroid.config.Configuration.getInstance().userAgentValue = c.packageName</span>
+<span class="nc" id="L550">        MapView(c).apply {</span>
+<span class="nc" id="L551">            setTileSource(TileSourceFactory.MAPNIK)</span>
+<span class="nc" id="L552">            setMultiTouchControls(true)</span>
+<span class="nc" id="L553">            controller.setZoom(12.0)</span>
+<span class="nc" id="L554">            controller.setCenter(GeoPoint(50.45, 30.52))</span>
+<span class="nc" id="L555">        }</span>
+    }
+<span class="nc bnc" id="L557" title="All 6 branches missed.">    DisposableEffect(permission) {</span>
+<span class="nc" id="L558">        val manager = c.getSystemService(Context.LOCATION_SERVICE) as LocationManager</span>
+<span class="nc" id="L559">        val listener =</span>
+<span class="nc" id="L560">            object : LocationListener {</span>
+                override fun onLocationChanged(l: Location) {
+<span class="nc" id="L562">                    location = l</span>
+<span class="nc" id="L563">                }</span>
+
+<span class="nc" id="L565">                override fun onProviderEnabled(p: String) {}</span>
+
+                override fun onProviderDisabled(p: String) {
+<span class="nc" id="L568">                    vm.message.value = &quot;GPS вимкнено&quot;</span>
+<span class="nc" id="L569">                }</span>
+            }
+<span class="nc bnc" id="L571" title="All 2 branches missed.">        if (permission)</span>
+<span class="nc" id="L572">            try {</span>
+<span class="nc" id="L573">                val provider =</span>
+<span class="nc bnc" id="L574" title="All 2 branches missed.">                    if (manager.isProviderEnabled(LocationManager.GPS_PROVIDER))</span>
+<span class="nc" id="L575">                        LocationManager.GPS_PROVIDER</span>
+<span class="nc" id="L576">                    else LocationManager.NETWORK_PROVIDER</span>
+<span class="nc" id="L577">                location = manager.getLastKnownLocation(provider)</span>
+<span class="nc" id="L578">                manager.requestLocationUpdates(provider, 3000, 5f, listener)</span>
+<span class="nc" id="L579">            } catch (e: Exception) {</span>
+<span class="nc" id="L580">                vm.message.value = &quot;Увімкніть геолокацію пристрою&quot;</span>
+            }
+<span class="nc" id="L582">        onDispose { manager.removeUpdates(listener) }</span>
+    }
+<span class="nc" id="L584">    DisposableEffect(map) {</span>
+<span class="nc" id="L585">        map.onResume()</span>
+<span class="nc" id="L586">        onDispose {</span>
+            map.onPause()
+            map.onDetach()
+<span class="nc" id="L589">        }</span>
+    }
+<span class="nc" id="L591">    Column(</span>
+<span class="nc" id="L592">        Modifier.fillMaxSize().padding(16.dp),</span>
+<span class="nc" id="L593">        verticalArrangement = Arrangement.spacedBy(8.dp),</span>
+    ) {
+<span class="nc" id="L595">        Text(&quot;Навчальні пости на мапі&quot;, style = MaterialTheme.typography.titleLarge)</span>
+<span class="nc" id="L596">        Text(</span>
+<span class="nc" id="L597">            &quot;Координати постів вигадані. © OpenStreetMap contributors&quot;,</span>
+<span class="nc" id="L598">            style = MaterialTheme.typography.bodySmall,</span>
+        )
+<span class="nc" id="L600">        Button(</span>
+<span class="nc" id="L601">            onClick = {</span>
+<span class="nc" id="L602">                launcher.launch(</span>
+                    arrayOf(
+<span class="nc" id="L604">                        Manifest.permission.ACCESS_FINE_LOCATION,</span>
+<span class="nc" id="L605">                        Manifest.permission.ACCESS_COARSE_LOCATION,</span>
+                    )
+                )
+<span class="nc" id="L608">            }</span>
+<span class="nc" id="L609">        ) {</span>
+<span class="nc bnc" id="L610" title="All 8 branches missed.">            Text(&quot;Показати мою позицію&quot;)</span>
+<span class="nc" id="L611">        }</span>
+<span class="nc" id="L612">        Text(</span>
+<span class="nc bnc" id="L613" title="All 2 branches missed.">            if (permission)</span>
+<span class="nc bnc" id="L614" title="All 4 branches missed.">                location?.let { &quot;GPS: %.5f, %.5f&quot;.format(it.latitude, it.longitude) }</span>
+<span class="nc" id="L615">                    ?: &quot;Очікування GPS…&quot;</span>
+<span class="nc" id="L616">            else &quot;Геолокацію ще не дозволено&quot;</span>
+        )
+<span class="nc bnc" id="L618" title="All 10 branches missed.">        selected?.let { id -&gt; TextButton(onClick = { select(id) }) { Text(&quot;Відкрити вибрану картку&quot;) } }</span>
+<span class="nc" id="L619">        AndroidView(</span>
+<span class="nc" id="L620">            factory = { map },</span>
+<span class="nc bnc" id="L621" title="All 6 branches missed.">            modifier = Modifier.fillMaxWidth().weight(1f).clipToBounds(),</span>
+<span class="nc" id="L622">            update = { v -&gt;</span>
+<span class="nc" id="L623">                v.overlays.clear()</span>
+<span class="nc" id="L624">                records.forEach { m -&gt;</span>
+<span class="nc" id="L625">                    v.overlays.add(</span>
+<span class="nc" id="L626">                        Marker(v).apply {</span>
+<span class="nc" id="L627">                            position = GeoPoint(m.latitude, m.longitude)</span>
+<span class="nc" id="L628">                            title = m.name</span>
+<span class="nc" id="L629">                            snippet = &quot;${m.type}: ${m.doseRate} мкЗв/год · ${m.powerMw} МВт&quot;</span>
+<span class="nc" id="L630">                            setOnMarkerClickListener { marker, _ -&gt; vm.selectedId.value = m.id; marker.showInfoWindow(); true }</span>
+<span class="nc bnc" id="L631" title="All 2 branches missed.">                            if (m.id == selected) { v.controller.setCenter(position); showInfoWindow() }</span>
+<span class="nc" id="L632">                        }</span>
+                    )
+<span class="nc" id="L634">                }</span>
+<span class="nc bnc" id="L635" title="All 2 branches missed.">                location?.let { l -&gt;</span>
+<span class="nc" id="L636">                    v.overlays.add(</span>
+<span class="nc" id="L637">                        Marker(v).apply {</span>
+<span class="nc" id="L638">                            position = GeoPoint(l.latitude, l.longitude)</span>
+<span class="nc" id="L639">                            title = &quot;Моя позиція&quot;</span>
+<span class="nc" id="L640">                        }</span>
+<span class="nc" id="L641">                    )</span>
+                }
+<span class="nc" id="L643">                v.invalidate()</span>
+<span class="nc" id="L644">            },</span>
+        )
+<span class="nc" id="L646">    }</span>
+<span class="nc bnc" id="L647" title="All 2 branches missed.">}</span>
+
+/** Інтерактивний Canvas: масштаб і вибір точки спільні для лінії та стовпців. */
+@Composable
+<span class="nc bnc" id="L651" title="All 26 branches missed.">private fun DataChart(values: List&lt;Double&gt;, bars: Boolean, color: Color = Green) {</span>
+<span class="nc" id="L652">    var zoom by remember { mutableStateOf(1f) }</span>
+<span class="nc" id="L653">    var selected by remember { mutableStateOf(-1) }</span>
+<span class="nc" id="L654">    val visible = values.takeLast((values.size / zoom).roundToInt().coerceAtLeast(2))</span>
+<span class="nc bnc" id="L655" title="All 2 branches missed.">    val maximum = (visible.maxOrNull() ?: 1.0).coerceAtLeast(.001)</span>
+<span class="nc" id="L656">    Column {</span>
+<span class="nc" id="L657">        Canvas(</span>
+<span class="nc" id="L658">            Modifier.fillMaxWidth()</span>
+<span class="nc" id="L659">                .height(180.dp)</span>
+<span class="nc" id="L660">                .semantics { contentDescription = &quot;Графік показників&quot; }</span>
+<span class="nc bnc" id="L661" title="All 4 branches missed.">                .pointerInput(visible) {</span>
+<span class="nc" id="L662">                    detectTapGestures { p -&gt;</span>
+<span class="nc" id="L663">                        selected =</span>
+<span class="nc" id="L664">                            ((p.x / size.width) * (visible.size - 1))</span>
+<span class="nc" id="L665">                                .roundToInt()</span>
+<span class="nc" id="L666">                                .coerceIn(0, (visible.size - 1).coerceAtLeast(0))</span>
+<span class="nc" id="L667">                    }</span>
+<span class="nc" id="L668">                }</span>
+<span class="nc" id="L669">        ) {</span>
+<span class="nc" id="L670">            drawLine(</span>
+<span class="nc" id="L671">                Color.Gray,</span>
+<span class="nc" id="L672">                Offset(0f, size.height - 8),</span>
+<span class="nc" id="L673">                Offset(size.width, size.height - 8),</span>
+<span class="nc" id="L674">                2f,</span>
+            )
+<span class="nc bnc" id="L676" title="All 4 branches missed.">            if (visible.isNotEmpty()) {</span>
+<span class="nc" id="L677">                val path = Path()</span>
+<span class="nc" id="L678">                visible.forEachIndexed { i, value -&gt;</span>
+<span class="nc" id="L679">                    val x =</span>
+<span class="nc bnc" id="L680" title="All 2 branches missed.">                        if (visible.size == 1) size.width / 2</span>
+<span class="nc" id="L681">                        else i * size.width / (visible.size - 1)</span>
+<span class="nc" id="L682">                    val y = (size.height - 12) * (1 - value / maximum).toFloat() + 4</span>
+<span class="nc bnc" id="L683" title="All 2 branches missed.">                    if (bars)</span>
+<span class="nc" id="L684">                        drawLine(</span>
+<span class="nc" id="L685">                            color,</span>
+<span class="nc" id="L686">                            Offset(x, size.height - 8),</span>
+<span class="nc" id="L687">                            Offset(x, y),</span>
+<span class="nc" id="L688">                            (size.width / visible.size * .5f).coerceAtMost(30f),</span>
+                        )
+                    else {
+<span class="nc bnc" id="L691" title="All 2 branches missed.">                        if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)</span>
+                    }
+<span class="nc bnc" id="L693" title="All 2 branches missed.">                    if (visible.size == 1) drawCircle(color, 5f, Offset(x, y))</span>
+<span class="nc bnc" id="L694" title="All 2 branches missed.">                    if (i == selected) drawCircle(Color(0xFFCB6B32), 7f, Offset(x, y))</span>
+<span class="nc" id="L695">                }</span>
+<span class="nc bnc" id="L696" title="All 2 branches missed.">                if (!bars) drawPath(path, color, style = Stroke(4f, cap = StrokeCap.Round))</span>
+            }
+<span class="nc" id="L698">        }</span>
+<span class="nc bnc" id="L699" title="All 6 branches missed.">        if (selected in visible.indices) Text(&quot;Точка ${selected+1}: %.3f&quot;.format(visible[selected]))</span>
+        else
+<span class="nc" id="L701">            Text(</span>
+<span class="nc" id="L702">                &quot;Натисніть на графік, щоб переглянути значення&quot;,</span>
+<span class="nc" id="L703">                style = MaterialTheme.typography.bodySmall,</span>
+            )
+<span class="nc" id="L705">        Text(&quot;Масштаб: %.1f×&quot;.format(zoom))</span>
+<span class="nc" id="L706">        Slider(</span>
+<span class="nc" id="L707">            zoom,</span>
+<span class="nc" id="L708">            {</span>
+<span class="nc" id="L709">                zoom = it</span>
+<span class="nc" id="L710">                selected = -1</span>
+<span class="nc" id="L711">            },</span>
+<span class="nc" id="L712">            valueRange = 1f..4f,</span>
+        )
+<span class="nc" id="L714">    }</span>
+<span class="nc bnc" id="L715" title="All 2 branches missed.">}</span>
+
+/** Compose-компонент Gauge: читає стан і передає події у ViewModel або callback. */
+@Composable
+<span class="nc bnc" id="L719" title="All 20 branches missed.">private fun Gauge(value: Double?, color: Color = Green) {</span>
+<span class="nc" id="L720">    val animated by</span>
+<span class="nc bnc" id="L721" title="All 2 branches missed.">        animateFloatAsState(((value ?: 0.0) / 20).toFloat().coerceIn(0f, 1f), label = &quot;sensor&quot;)</span>
+<span class="nc bnc" id="L722" title="All 2 branches missed.">    Canvas(</span>
+<span class="nc bnc" id="L723" title="All 2 branches missed.">        Modifier.fillMaxWidth().height(120.dp).semantics {</span>
+<span class="nc" id="L724">            contentDescription = &quot;Індикатор прискорення&quot;</span>
+<span class="nc" id="L725">        }</span>
+<span class="nc" id="L726">    ) {</span>
+<span class="nc" id="L727">        drawArc(Color.LightGray, 180f, 180f, false, style = Stroke(20f, cap = StrokeCap.Round))</span>
+<span class="nc" id="L728">        drawArc(color, 180f, 180f * animated, false, style = Stroke(20f, cap = StrokeCap.Round))</span>
+<span class="nc" id="L729">    }</span>
+<span class="nc bnc" id="L730" title="All 2 branches missed.">}</span>
+
+/** Compose-компонент SensorsScreen: читає стан і передає події у ViewModel або callback. */
+@Composable
+<span class="nc bnc" id="L734" title="All 12 branches missed.">private fun SensorsScreen(vm: MonitorViewModel) {</span>
+<span class="nc" id="L735">    val acceleration by vm.acceleration.collectAsStateWithLifecycle()</span>
+<span class="nc" id="L736">    val records by vm.all.collectAsStateWithLifecycle()</span>
+<span class="nc" id="L737">    val enabled by vm.notifications.collectAsStateWithLifecycle()</span>
+<span class="nc" id="L738">    val history by vm.sensorHistory.collectAsStateWithLifecycle()</span>
+<span class="nc" id="L739">    var bars by remember { mutableStateOf(false) }</span>
+<span class="nc" id="L740">    var alternate by remember { mutableStateOf(false) }</span>
+
+<span class="nc" id="L742">    val launcher =</span>
+<span class="nc bnc" id="L743" title="All 6 branches missed.">        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted -&gt;</span>
+<span class="nc" id="L744">            vm.setNotifications(granted)</span>
+<span class="nc bnc" id="L745" title="All 2 branches missed.">            if (!granted) vm.message.value = &quot;Сповіщення заборонено в системі&quot;</span>
+<span class="nc" id="L746">        }</span>
+<span class="nc" id="L747">    Column(</span>
+<span class="nc" id="L748">        Modifier.verticalScroll(rememberScrollState()).padding(20.dp),</span>
+<span class="nc" id="L749">        verticalArrangement = Arrangement.spacedBy(12.dp),</span>
+    ) {
+<span class="nc" id="L751">        Text(&quot;Сенсори й події&quot;, style = MaterialTheme.typography.headlineMedium)</span>
+<span class="nc" id="L752">        Text(&quot;Акселерометр вимірює прискорення телефону, а не радіацію.&quot;)</span>
+<span class="nc" id="L753">        Text(</span>
+<span class="nc bnc" id="L754" title="All 4 branches missed.">            acceleration?.let { &quot;%.3f м/с²&quot;.format(it) } ?: &quot;Датчик недоступний або ще немає даних&quot;,</span>
+<span class="nc" id="L755">            style = MaterialTheme.typography.headlineSmall,</span>
+        )
+<span class="nc bnc" id="L757" title="All 2 branches missed.">        Gauge(acceleration, if (alternate) Color(0xFF5978B5) else Green)</span>
+<span class="nc bnc" id="L758" title="All 10 branches missed.">        TextButton(onClick = { alternate = !alternate }) { Text(&quot;Змінити колір індикатора&quot;) }</span>
+<span class="nc" id="L759">        Text(&quot;Прискорення в реальному часі&quot;, style = MaterialTheme.typography.titleLarge)</span>
+<span class="nc" id="L760">        DataChart(history, false)</span>
+<span class="nc" id="L761">        SensorExtras(vm)</span>
+<span class="nc" id="L762">        Text(&quot;Навчальна енергія за 1 год: МВт·год&quot;, style = MaterialTheme.typography.titleLarge)</span>
+<span class="nc" id="L763">        Row(verticalAlignment = Alignment.CenterVertically) {</span>
+<span class="nc" id="L764">            Switch(bars, { bars = it })</span>
+<span class="nc bnc" id="L765" title="All 2 branches missed.">            Text(if (bars) &quot;Стовпці&quot; else &quot;Лінія&quot;)</span>
+<span class="nc" id="L766">        }</span>
+<span class="nc" id="L767">        DataChart(records.map { it.powerMw }, bars)</span>
+<span class="nc bnc" id="L768" title="All 2 branches missed.">        DataChart(records.map { it.powerMw }, !bars)</span>
+<span class="nc bnc" id="L769" title="All 8 branches missed.">        if(records.isNotEmpty()) Text(&quot;Середнє: %.1f; пікове: %.1f МВт·год&quot;.format(records.map { it.powerMw }.average(), records.maxOf { it.powerMw }))</span>
+<span class="nc" id="L770">        Row(verticalAlignment = Alignment.CenterVertically) {</span>
+<span class="nc" id="L771">            Switch(</span>
+<span class="nc bnc" id="L772" title="All 6 branches missed.">                enabled,</span>
+<span class="nc" id="L773">                { value -&gt;</span>
+<span class="nc bnc" id="L774" title="All 4 branches missed.">                    if (value &amp;&amp; Build.VERSION.SDK_INT &gt;= 33)</span>
+<span class="nc" id="L775">                        launcher.launch(Manifest.permission.POST_NOTIFICATIONS)</span>
+<span class="nc" id="L776">                    else vm.setNotifications(value)</span>
+<span class="nc" id="L777">                },</span>
+            )
+<span class="nc" id="L779">            Text(&quot;Локальні сповіщення&quot;)</span>
+<span class="nc" id="L780">        }</span>
+<span class="nc bnc" id="L781" title="All 8 branches missed.">        Button(onClick = { vm.schedule() }) { Text(&quot;Нагадати через 15 секунд&quot;) }</span>
+<span class="nc" id="L782">        Text(</span>
+<span class="nc" id="L783">            &quot;WorkManager виконає нагадування не раніше заданого часу; ОС може відкласти його.&quot;,</span>
+<span class="nc" id="L784">            style = MaterialTheme.typography.bodySmall,</span>
+        )
+<span class="nc" id="L786">    }</span>
+<span class="nc bnc" id="L787" title="All 2 branches missed.">}</span>
+
+/** Compose-компонент FilesScreen: читає стан і передає події у ViewModel або callback. */
+@Composable
+<span class="nc bnc" id="L791" title="All 12 branches missed.">private fun FilesScreen(vm: MonitorViewModel) {</span>
+<span class="nc" id="L792">    val c = LocalContext.current</span>
+<span class="nc" id="L793">    val files by vm.documents.collectAsStateWithLifecycle()</span>
+<span class="nc" id="L794">    val records by vm.filtered.collectAsStateWithLifecycle()</span>
+<span class="nc" id="L795">    val allRecords by vm.all.collectAsStateWithLifecycle()</span>
+<span class="nc" id="L796">    val selectedPost by vm.selectedId.collectAsStateWithLifecycle()</span>
+<span class="nc" id="L797">    val period by vm.periodHours.collectAsStateWithLifecycle()</span>
+<span class="nc" id="L798">    var fileType by rememberSaveable { mutableStateOf(&quot;Усі&quot;) }</span>
+<span class="nc" id="L799">    var fileSort by rememberSaveable { mutableStateOf(&quot;Дата&quot;) }</span>
+<span class="nc" id="L800">    var preview by remember { mutableStateOf&lt;File?&gt;(null) }</span>
+<span class="nc" id="L801">    var renaming by remember { mutableStateOf&lt;File?&gt;(null) }</span>
+<span class="nc" id="L802">    var newName by remember { mutableStateOf(&quot;&quot;) }</span>
+<span class="nc bnc" id="L803" title="All 2 branches missed.">    preview?.let { DocumentPreview(it) { preview = null } }</span>
+<span class="nc bnc" id="L804" title="All 58 branches missed.">    renaming?.let { file -&gt; AlertDialog(onDismissRequest = { renaming=null }, title = { Text(&quot;Перейменування&quot;) }, text = { OutlinedTextField(newName,{newName=it},label={Text(&quot;Назва без розширення&quot;)}) }, confirmButton={TextButton(onClick={vm.renameDocument(file,newName);renaming=null}){Text(&quot;Зберегти назву&quot;)}},dismissButton={TextButton(onClick={renaming=null}){Text(&quot;Скасувати&quot;)}}) }</span>
+<span class="nc" id="L805">    val resources by vm.resources.collectAsStateWithLifecycle()</span>
+<span class="nc" id="L806">    val picker =</span>
+<span class="nc bnc" id="L807" title="All 6 branches missed.">        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -&gt;</span>
+<span class="nc bnc" id="L808" title="All 2 branches missed.">            uri?.let(vm::addDocument)</span>
+<span class="nc" id="L809">        }</span>
+<span class="nc" id="L810">    var exportName by remember { mutableStateOf(&quot;monitor-report.pdf&quot;) }</span>
+<span class="nc" id="L811">    val saver =</span>
+<span class="nc" id="L812">        rememberLauncherForActivityResult(</span>
+<span class="nc bnc" id="L813" title="All 6 branches missed.">            ActivityResultContracts.CreateDocument(&quot;application/octet-stream&quot;)</span>
+<span class="nc" id="L814">        ) { uri -&gt;</span>
+<span class="nc bnc" id="L815" title="All 2 branches missed.">            if (uri != null)</span>
+<span class="nc" id="L816">                vm.task {</span>
+<span class="nc bnc" id="L817" title="All 2 branches missed.">                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {</span>
+<span class="nc" id="L818">                        c.contentResolver.openOutputStream(uri)!!.use { out -&gt;</span>
+<span class="nc" id="L819">                            File(c.filesDir, exportName).inputStream().use { it.copyTo(out) }</span>
+<span class="nc" id="L820">                        }</span>
+                    }
+<span class="nc" id="L822">                    vm.message.value = &quot;Файл експортовано&quot;</span>
+<span class="nc" id="L823">                }</span>
+<span class="nc" id="L824">        }</span>
+<span class="nc" id="L825">    Column(</span>
+<span class="nc" id="L826">        Modifier.verticalScroll(rememberScrollState()).padding(20.dp),</span>
+<span class="nc" id="L827">        verticalArrangement = Arrangement.spacedBy(12.dp),</span>
+    ) {
+<span class="nc" id="L829">        Text(&quot;Файли та ресурси&quot;, style = MaterialTheme.typography.headlineMedium)</span>
+<span class="nc bnc" id="L830" title="All 2 branches missed.">        for (format in listOf(&quot;csv&quot;, &quot;json&quot;)) {</span>
+<span class="nc" id="L831">            Text(format.uppercase(), style = MaterialTheme.typography.titleLarge)</span>
+<span class="nc" id="L832">            Row {</span>
+<span class="nc bnc" id="L833" title="All 14 branches missed.">                Button(onClick = { vm.export(format) }) { Text(&quot;Записати&quot;) }</span>
+<span class="nc bnc" id="L834" title="All 6 branches missed.">                Spacer(Modifier.width(8.dp))</span>
+<span class="nc bnc" id="L835" title="All 8 branches missed.">                OutlinedButton(onClick = { vm.importFile(format) }) { Text(&quot;Прочитати&quot;) }</span>
+<span class="nc" id="L836">            }</span>
+<span class="nc" id="L837">            TextButton(</span>
+<span class="nc" id="L838">                onClick = {</span>
+<span class="nc" id="L839">                    exportName = &quot;measurements.$format&quot;</span>
+<span class="nc bnc" id="L840" title="All 2 branches missed.">                    if (File(c.filesDir, exportName).exists()) saver.launch(exportName)</span>
+<span class="nc" id="L841">                    else vm.message.value = &quot;Спочатку запишіть файл&quot;</span>
+<span class="nc" id="L842">                }</span>
+<span class="nc" id="L843">            ) {</span>
+<span class="nc bnc" id="L844" title="All 8 branches missed.">                Text(&quot;Експортувати $format&quot;)</span>
+<span class="nc" id="L845">            }</span>
+        }
+<span class="nc bnc" id="L847" title="All 6 branches missed.">        Choice(&quot;Період, год&quot;,listOf(&quot;Увесь час&quot;,&quot;1&quot;,&quot;24&quot;,&quot;168&quot;),period) {vm.periodHours.value=it}</span>
+<span class="nc" id="L848">        Text(&quot;Дані з журналу після читання CSV/JSON; фільтри спільні з журналом&quot;)</span>
+<span class="nc" id="L849">        DataChart(records.map {it.doseRate},false)</span>
+<span class="nc bnc" id="L850" title="All 6 branches missed.">        DataChart(records.map {it.doseRate},true)</span>
+<span class="nc bnc" id="L851" title="All 14 branches missed.">        Button(onClick = vm::pdf) { Text(&quot;Створити PDF-звіт&quot;) }</span>
+<span class="nc" id="L852">        TextButton(</span>
+<span class="nc" id="L853">            onClick = {</span>
+<span class="nc" id="L854">                exportName = &quot;monitor-report.pdf&quot;</span>
+<span class="nc bnc" id="L855" title="All 2 branches missed.">                if (File(c.filesDir, exportName).exists()) saver.launch(exportName)</span>
+<span class="nc" id="L856">                else vm.message.value = &quot;Спочатку створіть PDF&quot;</span>
+<span class="nc" id="L857">            }</span>
+<span class="nc" id="L858">        ) {</span>
+<span class="nc bnc" id="L859" title="All 8 branches missed.">            Text(&quot;Експортувати PDF&quot;)</span>
+<span class="nc" id="L860">        }</span>
+<span class="nc bnc" id="L861" title="All 10 branches missed.">        Choice(&quot;Пост для вкладень&quot;,listOf(&quot;Без поста&quot;) + allRecords.map {it.id}, selectedPost ?: &quot;Без поста&quot;) {vm.selectedId.value=if(it==&quot;Без поста&quot;) null else it}</span>
+<span class="nc" id="L862">        Choice(&quot;Тип файлу&quot;,listOf(&quot;Усі&quot;,&quot;jpg&quot;,&quot;png&quot;,&quot;pdf&quot;,&quot;docx&quot;),fileType){fileType=it}</span>
+<span class="nc" id="L863">        Choice(&quot;Сортування файлів&quot;,listOf(&quot;Дата&quot;,&quot;Тип&quot;),fileSort){fileSort=it}</span>
+<span class="nc" id="L864">        Button(onClick = { picker.launch(arrayOf(&quot;image/jpeg&quot;, &quot;image/png&quot;, &quot;application/pdf&quot;, &quot;application/vnd.openxmlformats-officedocument.wordprocessingml.document&quot;)) }) {</span>
+<span class="nc bnc" id="L865" title="All 8 branches missed.">            Text(&quot;Додати фото або документ&quot;)</span>
+<span class="nc" id="L866">        }</span>
+<span class="nc bnc" id="L867" title="All 8 branches missed.">        val displayedFiles=files.filter { (fileType==&quot;Усі&quot; || it.extension==fileType) &amp;&amp; (selectedPost==null || vm.documentPost(it)==selectedPost) }</span>
+<span class="nc bnc" id="L868" title="All 2 branches missed.">        (if(fileSort==&quot;Тип&quot;) displayedFiles.sortedBy {it.extension} else displayedFiles.sortedByDescending {it.lastModified()}).forEach { file -&gt;</span>
+<span class="nc" id="L869">            Card(Modifier.fillMaxWidth()) {</span>
+<span class="nc bnc" id="L870" title="All 6 branches missed.">                Column(Modifier.padding(12.dp)) {</span>
+<span class="nc" id="L871">                    Text(file.name)</span>
+<span class="nc" id="L872">                    Text(&quot;Пост: ${vm.documentPost(file)} · ${Date(file.lastModified())}&quot;,style=MaterialTheme.typography.bodySmall)</span>
+<span class="nc bnc" id="L873" title="All 8 branches missed.">                    TextButton(onClick={renaming=file;newName=file.nameWithoutExtension}){Text(&quot;Перейменувати&quot;)}</span>
+<span class="nc bnc" id="L874" title="All 10 branches missed.">                    if(file.extension in listOf(&quot;pdf&quot;,&quot;docx&quot;)) TextButton(onClick={preview=file}){Text(&quot;Переглянути документ&quot;)}</span>
+<span class="nc bnc" id="L875" title="All 2 branches missed.">                    if (file.extension in listOf(&quot;png&quot;, &quot;jpg&quot;))</span>
+<span class="nc" id="L876">                        coil.compose.AsyncImage(</span>
+<span class="nc" id="L877">                            model = file,</span>
+<span class="nc" id="L878">                            contentDescription = &quot;Прикріплене фото&quot;,</span>
+<span class="nc" id="L879">                            modifier = Modifier.fillMaxWidth().height(160.dp),</span>
+                        )
+<span class="nc" id="L881">                    else Text(&quot;${file.extension.uppercase()} · ${file.length()/1024} КБ&quot;)</span>
+<span class="nc" id="L882">                }</span>
+<span class="nc" id="L883">            }</span>
+<span class="nc" id="L884">        }</span>
+<span class="nc" id="L885">        Text(&quot;Ресурси пристрою&quot;, style = MaterialTheme.typography.titleLarge)</span>
+<span class="nc" id="L886">        Text(&quot;CPU процесу: %.1f %% одного ядра&quot;.format(resources.cpu))</span>
+<span class="nc" id="L887">        LinearProgressIndicator(</span>
+<span class="nc" id="L888">            progress = { (resources.cpu / 100).toFloat().coerceIn(0f, 1f) },</span>
+<span class="nc" id="L889">            modifier = Modifier.fillMaxWidth(),</span>
+        )
+<span class="nc" id="L891">        Text(&quot;Пам’ять процесу (PSS): %.1f МБ&quot;.format(resources.memoryMb))</span>
+<span class="nc bnc" id="L892" title="All 6 branches missed.">        Text(&quot;Батарея: ${if(resources.battery in 0..100)&quot;${resources.battery}%&quot; else &quot;недоступна&quot;}&quot;)</span>
+<span class="nc bnc" id="L893" title="All 6 branches missed.">        Gauge(if (resources.battery in 0..100) resources.battery / 5.0 else null)</span>
+<span class="nc" id="L894">    }</span>
+<span class="nc bnc" id="L895" title="All 2 branches missed.">}</span>
+
+/** Route argument selects the entity; Room Flow keeps details and history current. */
+@Composable
+<span class="nc bnc" id="L899" title="All 20 branches missed.">private fun DetailScreen(vm: MonitorViewModel, id: String, map: (String) -&gt; Unit) {</span>
+<span class="nc bnc" id="L900" title="All 2 branches missed.">    val rows by vm.all.collectAsStateWithLifecycle()</span>
+<span class="nc" id="L901">    val history by remember(id) { vm.history(id) }.collectAsStateWithLifecycle(initialValue = emptyList())</span>
+<span class="nc bnc" id="L902" title="All 4 branches missed.">    val m = rows.find { it.id == id }</span>
+<span class="nc" id="L903">    Column(Modifier.verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {</span>
+<span class="nc" id="L904">        Text(&quot;Деталі поста&quot;, style = MaterialTheme.typography.headlineMedium)</span>
+<span class="nc bnc" id="L905" title="All 2 branches missed.">        if (m == null) Text(&quot;Пост видалено або він ще завантажується&quot;) else {</span>
+<span class="nc" id="L906">            Text(m.name); Text(&quot;Тип: ${m.type}&quot;); Text(&quot;Показник: ${m.doseRate} мкЗв/год; потужність: ${m.powerMw} МВт&quot;)</span>
+<span class="nc" id="L907">            Text(&quot;Координати: ${m.latitude}, ${m.longitude}&quot;)</span>
+<span class="nc bnc" id="L908" title="All 12 branches missed.">            if (BuildConfig.PRACTICAL &gt;= 4) Button(onClick = { map(id) }) { Text(&quot;Показати пост на мапі&quot;) }</span>
+<span class="nc" id="L909">            Text(&quot;Журнал змін (Room, зв’язок один-до-багатьох)&quot;)</span>
+<span class="nc" id="L910">            history.take(20).forEach { Text(&quot;${it.action} · ${Date(it.changedAt)}&quot;) }</span>
+        }
+<span class="nc" id="L912">    }</span>
+<span class="nc bnc" id="L913" title="All 2 branches missed.">}</span>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

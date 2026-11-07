@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="uk"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DeviceServices.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">ua.kpi.radmonitor.device</a> &gt; <span class="el_source">DeviceServices.kt</span></div><h1>DeviceServices.kt</h1><pre class="source lang-java linenums">package ua.kpi.radmonitor.device
+import ua.kpi.radmonitor.*
+import ua.kpi.radmonitor.domain.*
+import ua.kpi.radmonitor.data.*
+import ua.kpi.radmonitor.viewmodel.*
+import ua.kpi.radmonitor.device.*
+import ua.kpi.radmonitor.ui.*
+
+
+import android.app.*
+import android.content.*
+import android.graphics.*
+import android.graphics.pdf.PdfDocument
+import android.hardware.*
+import android.net.Uri
+import android.os.*
+import androidx.core.app.NotificationCompat
+import androidx.work.*
+import java.io.File
+import kotlin.math.sqrt
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.callbackFlow
+
+/** Телефон не є дозиметром. Акселерометр показує лише рух пристрою. */
+<span class="nc" id="L25">class DeviceSensors(private val context: Context) {</span>
+<span class="nc" id="L26">    fun vectors(sensorType: Int) = callbackFlow&lt;VectorReading?&gt; {</span>
+<span class="nc" id="L27">        val manager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager</span>
+<span class="nc" id="L28">        val sensor = manager.getDefaultSensor(sensorType)</span>
+<span class="nc" id="L29">        val listener = object : SensorEventListener {</span>
+<span class="nc" id="L30">            override fun onSensorChanged(e: SensorEvent) { trySend(VectorReading(e.values[0].toDouble(), e.values[1].toDouble(), e.values[2].toDouble(), android.os.SystemClock.elapsedRealtime())) }</span>
+<span class="nc" id="L31">            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}</span>
+        }
+<span class="nc bnc" id="L33" title="All 2 branches missed.">        if (sensor == null) trySend(null) else manager.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_NORMAL)</span>
+<span class="nc" id="L34">        awaitClose { manager.unregisterListener(listener) }</span>
+<span class="nc" id="L35">    }</span>
+    fun acceleration() =
+<span class="nc" id="L37">        callbackFlow&lt;Double?&gt; {</span>
+<span class="nc" id="L38">            val manager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager</span>
+<span class="nc" id="L39">            val sensor = manager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)</span>
+<span class="nc" id="L40">            val listener =</span>
+<span class="nc" id="L41">                object : SensorEventListener {</span>
+                    override fun onSensorChanged(e: SensorEvent) {
+<span class="nc" id="L43">                        val v = e.values</span>
+<span class="nc" id="L44">                        val magnitude = sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).toDouble()</span>
+<span class="nc bnc" id="L45" title="All 6 branches missed.">                        if (magnitude.isFinite()) trySend(magnitude)</span>
+<span class="nc" id="L46">                    }</span>
+
+<span class="nc" id="L48">                    override fun onAccuracyChanged(s: Sensor?, a: Int) {}</span>
+                }
+<span class="nc bnc" id="L50" title="All 2 branches missed.">            if (sensor == null) trySend(null)</span>
+<span class="nc" id="L51">            else manager.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_NORMAL)</span>
+<span class="nc" id="L52">            awaitClose { manager.unregisterListener(listener) }</span>
+<span class="nc" id="L53">        }</span>
+}
+
+<span class="nc" id="L56">data class Resources(val cpu: Double = 0.0, val memoryMb: Double = 0.0, val battery: Int = -1)</span>
+
+<span class="nc" id="L58">class ResourceSampler(private val c: Context) {</span>
+<span class="nc" id="L59">    private var lastTime = android.os.SystemClock.elapsedRealtime()</span>
+<span class="nc" id="L60">    private var lastCpu = android.os.Process.getElapsedCpuTime()</span>
+
+    fun read(): Resources {
+<span class="nc" id="L63">        val now = android.os.SystemClock.elapsedRealtime()</span>
+<span class="nc" id="L64">        val cpu = android.os.Process.getElapsedCpuTime()</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">        val load = if (now &gt; lastTime) (cpu - lastCpu) * 100.0 / (now - lastTime) else 0.0</span>
+<span class="nc" id="L66">        lastTime = now</span>
+<span class="nc" id="L67">        lastCpu = cpu</span>
+<span class="nc" id="L68">        val info = Debug.MemoryInfo()</span>
+<span class="nc" id="L69">        Debug.getMemoryInfo(info)</span>
+<span class="nc" id="L70">        val battery = c.getSystemService(Context.BATTERY_SERVICE) as BatteryManager</span>
+<span class="nc" id="L71">        return Resources(</span>
+<span class="nc" id="L72">            load.coerceAtLeast(0.0),</span>
+<span class="nc" id="L73">            info.totalPss / 1024.0,</span>
+<span class="nc" id="L74">            battery.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY),</span>
+        )
+    }
+}
+
+<span class="nc" id="L79">class ReminderWorker(c: Context, p: WorkerParameters) : CoroutineWorker(c, p) {</span>
+    override suspend fun doWork(): Result {
+        if (
+<span class="nc bnc" id="L82" title="All 2 branches missed.">            !applicationContext</span>
+<span class="nc" id="L83">                .getSharedPreferences(&quot;settings&quot;, 0)</span>
+<span class="nc" id="L84">                .getBoolean(&quot;notifications&quot;, false)</span>
+        )
+<span class="nc" id="L86">            return Result.success()</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">        val category = inputData.getString(&quot;category&quot;) ?: &quot;reminder&quot;</span>
+<span class="nc" id="L88">        val eventId = inputData.getInt(&quot;eventId&quot;, id.hashCode())</span>
+<span class="nc bnc" id="L89" title="All 2 branches missed.">        try { EventNotifications.show(applicationContext, category, eventId, inputData.getString(&quot;text&quot;) ?: &quot;Перегляньте журнал постів і сенсори.&quot;) }</span>
+<span class="nc" id="L90">        catch (_: SecurityException) { return Result.failure() }</span>
+
+<span class="nc" id="L92">        return Result.success()</span>
+    }
+}
+
+object FilesService {
+    /** Зберігаємо копію з контрольованим ім'ям, без шляхів із зовнішнього URI. */
+    fun copyDocument(c: Context, uri: Uri): File {
+<span class="nc bnc" id="L99" title="All 2 branches missed.">        val type = c.contentResolver.getType(uri) ?: error(&quot;Не вдалося визначити MIME&quot;)</span>
+<span class="nc bnc" id="L100" title="All 2 branches missed.">        require(type in listOf(&quot;image/jpeg&quot;, &quot;image/png&quot;, &quot;application/pdf&quot;, &quot;application/vnd.openxmlformats-officedocument.wordprocessingml.document&quot;)) {</span>
+<span class="nc" id="L101">            &quot;Оберіть JPEG, PNG, PDF або DOCX&quot;</span>
+        }
+<span class="nc" id="L103">        val ext =</span>
+<span class="nc bnc" id="L104" title="All 4 branches missed.">            when (type) {</span>
+<span class="nc" id="L105">                &quot;image/jpeg&quot; -&gt; &quot;jpg&quot;</span>
+<span class="nc" id="L106">                &quot;image/png&quot; -&gt; &quot;png&quot;</span>
+<span class="nc" id="L107">                &quot;application/vnd.openxmlformats-officedocument.wordprocessingml.document&quot; -&gt; &quot;docx&quot;</span>
+<span class="nc" id="L108">                else -&gt; &quot;pdf&quot;</span>
+            }
+<span class="nc" id="L110">        val dir = File(c.filesDir, &quot;documents&quot;).apply { mkdirs() }</span>
+<span class="nc" id="L111">        val f = File(dir, &quot;document-${System.currentTimeMillis()}.$ext&quot;)</span>
+<span class="nc" id="L112">        try {</span>
+<span class="nc" id="L113">            c.contentResolver.openInputStream(uri)!!.use { input -&gt;</span>
+<span class="nc" id="L114">                f.outputStream().use { out -&gt;</span>
+<span class="nc" id="L115">                    val buffer = ByteArray(8192)</span>
+<span class="nc" id="L116">                    var total = 0</span>
+<span class="nc" id="L117">                    while (true) {</span>
+<span class="nc" id="L118">                        val n = input.read(buffer)</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">                        if (n &lt; 0) break</span>
+<span class="nc" id="L120">                        total += n</span>
+<span class="nc bnc" id="L121" title="All 4 branches missed.">                        require(total &lt;= 10 * 1024 * 1024) { &quot;Ліміт файлу 10 МБ&quot; }</span>
+<span class="nc" id="L122">                        out.write(buffer, 0, n)</span>
+                    }
+<span class="nc" id="L124">                }</span>
+<span class="nc" id="L125">            }</span>
+<span class="nc" id="L126">        } catch (e: Exception) {</span>
+<span class="nc" id="L127">            f.delete()</span>
+<span class="nc" id="L128">            throw e</span>
+        }
+<span class="nc" id="L130">        return f</span>
+    }
+
+    fun pdf(c: Context, rows: List&lt;Measurement&gt;): File {
+<span class="nc" id="L134">        val pdf = PdfDocument()</span>
+<span class="nc" id="L135">        val paint = Paint(Paint.ANTI_ALIAS_FLAG)</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">        val chunks = rows.chunked(20).ifEmpty { listOf(emptyList()) }</span>
+<span class="nc" id="L137">        chunks.forEachIndexed { index, items -&gt;</span>
+<span class="nc" id="L138">            val page = pdf.startPage(PdfDocument.PageInfo.Builder(595, 842, index + 1).create())</span>
+<span class="nc" id="L139">            val canvas = page.canvas</span>
+<span class="nc" id="L140">            paint.color = Color.rgb(20, 80, 70)</span>
+<span class="nc" id="L141">            paint.textSize = 22f</span>
+<span class="nc" id="L142">            canvas.drawText(&quot;Навчальний моніторинг АЕС&quot;, 40f, 50f, paint)</span>
+<span class="nc" id="L143">            paint.textSize = 11f</span>
+<span class="nc" id="L144">            paint.color = Color.BLACK</span>
+<span class="nc" id="L145">            canvas.drawText(</span>
+<span class="nc" id="L146">                &quot;Варіант 4. Демонстраційні дані. Сторінка ${index+1}/${chunks.size}&quot;,</span>
+<span class="nc" id="L147">                40f,</span>
+<span class="nc" id="L148">                75f,</span>
+<span class="nc" id="L149">                paint,</span>
+            )
+<span class="nc" id="L151">            canvas.drawText(&quot;Пост                         мкЗв/год        МВт&quot;, 40f, 110f, paint)</span>
+<span class="nc" id="L152">            items.forEachIndexed { j, m -&gt;</span>
+<span class="nc" id="L153">                val y = 135f + j * 22</span>
+<span class="nc" id="L154">                canvas.drawText(m.name.take(24), 40f, y, paint)</span>
+<span class="nc" id="L155">                canvas.drawText(&quot;%.3f&quot;.format(m.doseRate), 280f, y, paint)</span>
+<span class="nc" id="L156">                canvas.drawText(&quot;%.1f&quot;.format(m.powerMw), 390f, y, paint)</span>
+<span class="nc" id="L157">            }</span>
+<span class="nc" id="L158">            paint.color = Color.rgb(20, 103, 92)</span>
+<span class="nc bnc" id="L159" title="All 6 branches missed.">            val max = items.maxOfOrNull { it.doseRate }?.coerceAtLeast(.01) ?: 1.0</span>
+<span class="nc" id="L160">            items.forEachIndexed { j, m -&gt;</span>
+<span class="nc" id="L161">                val x = 40f + j * 24</span>
+<span class="nc" id="L162">                canvas.drawRect(x, 740f - (m.doseRate / max * 110).toFloat(), x + 15, 740f, paint)</span>
+<span class="nc" id="L163">            }</span>
+<span class="nc" id="L164">            paint.textSize = 10f</span>
+<span class="nc" id="L165">            canvas.drawText(&quot;Порівняння навчальних показників постів&quot;, 40f, 770f, paint)</span>
+<span class="nc" id="L166">            pdf.finishPage(page)</span>
+<span class="nc" id="L167">        }</span>
+<span class="nc" id="L168">        val file = File(c.filesDir, &quot;monitor-report.pdf&quot;)</span>
+<span class="nc" id="L169">        try {</span>
+<span class="nc" id="L170">            file.outputStream().use { pdf.writeTo(it) }</span>
+        } finally {
+<span class="nc" id="L172">            pdf.close()</span>
+        }
+<span class="nc" id="L174">        return file</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

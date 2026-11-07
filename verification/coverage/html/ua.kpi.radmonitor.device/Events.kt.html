@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="uk"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Events.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">ua.kpi.radmonitor.device</a> &gt; <span class="el_source">Events.kt</span></div><h1>Events.kt</h1><pre class="source lang-java linenums">package ua.kpi.radmonitor.device
+import ua.kpi.radmonitor.*
+import ua.kpi.radmonitor.domain.*
+import ua.kpi.radmonitor.data.*
+import ua.kpi.radmonitor.viewmodel.*
+import ua.kpi.radmonitor.device.*
+import ua.kpi.radmonitor.ui.*
+
+
+import android.app.*
+import android.content.*
+import android.graphics.pdf.PdfRenderer
+import android.os.ParcelFileDescriptor
+import androidx.core.app.NotificationCompat
+import androidx.work.*
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.callbackFlow
+import java.io.File
+import kotlin.math.*
+
+/** Vector and monotonic timestamp preserve repeated readings, not just value changes. */
+<span class="nc" id="L34">data class VectorReading(val x: Double, val y: Double, val z: Double, val timestamp: Long) {</span>
+<span class="nc" id="L35">    val magnitude get() = sqrt(x*x+y*y+z*z)</span>
+}
+
+object EventNotifications {
+    fun show(context: Context, category: String, id: Int, text: String) {
+<span class="nc" id="L40">        val nm = context.getSystemService(NotificationManager::class.java)</span>
+<span class="nc bnc" id="L41" title="All 2 branches missed.">        nm.createNotificationChannel(NotificationChannel(category, if(category==&quot;sensor&quot;) &quot;Порогові події сенсорів&quot; else &quot;Нагадування&quot;, NotificationManager.IMPORTANCE_DEFAULT))</span>
+<span class="nc" id="L42">        val open = PendingIntent.getActivity(context, id, Intent(context, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)</span>
+<span class="nc" id="L43">        val ack = PendingIntent.getBroadcast(context, id, Intent(context, EventReceiver::class.java).putExtra(&quot;eventId&quot;,id), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)</span>
+<span class="nc" id="L44">        nm.notify(id, NotificationCompat.Builder(context,category).setSmallIcon(android.R.drawable.ic_dialog_info)</span>
+<span class="nc bnc" id="L45" title="All 2 branches missed.">            .setContentTitle(if(category==&quot;sensor&quot;) &quot;Поріг сенсора&quot; else &quot;Навчальне нагадування&quot;).setContentText(text)</span>
+<span class="nc" id="L46">            .setContentIntent(open).addAction(android.R.drawable.ic_menu_view,&quot;Переглянути&quot;,open)</span>
+<span class="nc" id="L47">            .addAction(android.R.drawable.checkbox_on_background,&quot;Підтвердити&quot;,ack).setAutoCancel(true).build())</span>
+<span class="nc" id="L48">        context.getSharedPreferences(&quot;events&quot;,0).edit().putString(id.toString(),&quot;$category · $text · очікує підтвердження&quot;).apply()</span>
+<span class="nc" id="L49">    }</span>
+}
+/** Internal receiver updates the same event state that the foreground UI observes. */
+<span class="nc" id="L52">class EventReceiver: BroadcastReceiver() {</span>
+    override fun onReceive(context: Context, intent: Intent) {
+<span class="nc" id="L54">        val id=intent.getIntExtra(&quot;eventId&quot;,0)</span>
+<span class="nc" id="L55">        context.getSystemService(NotificationManager::class.java).cancel(id)</span>
+<span class="nc" id="L56">        context.getSharedPreferences(&quot;events&quot;,0).edit().putString(id.toString(),&quot;Подію $id підтверджено&quot;).apply()</span>
+<span class="nc" id="L57">    }</span>
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

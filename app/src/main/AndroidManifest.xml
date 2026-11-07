@@ -4,9 +4,10 @@
  <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
  <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
  <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
- <application android:label="АЕС • Моніторинг" android:theme="@style/AppTheme" android:allowBackup="false" android:networkSecurityConfig="@xml/network_security_config" android:supportsRtl="true">
+ <application android:icon="@drawable/station" android:label="АЕС • Моніторинг" android:theme="@style/AppTheme" android:allowBackup="false" android:networkSecurityConfig="@xml/network_security_config" android:supportsRtl="true">
   <activity android:name=".MainActivity" android:exported="true">
    <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
   </activity>
- </application>
+ <receiver android:name=".device.EventReceiver" android:exported="false" />
+</application>
 </manifest>

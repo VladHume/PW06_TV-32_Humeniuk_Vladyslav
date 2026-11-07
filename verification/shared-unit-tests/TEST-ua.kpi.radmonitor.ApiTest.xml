@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="ua.kpi.radmonitor.ApiTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-07T12:49:59" hostname="Mac" time="1.909">
+<testsuite name="ua.kpi.radmonitor.ApiTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-11-07T14:05:49" hostname="Mac" time="1.638">
   <properties/>
-  <testcase name="offlineError" classname="ua.kpi.radmonitor.ApiTest" time="1.741"/>
-  <testcase name="loginAndProtectedEndpoint" classname="ua.kpi.radmonitor.ApiTest" time="0.059"/>
-  <testcase name="viewerRole" classname="ua.kpi.radmonitor.ApiTest" time="0.047"/>
-  <testcase name="wrongPassword" classname="ua.kpi.radmonitor.ApiTest" time="0.038"/>
-  <testcase name="serviceUnavailable" classname="ua.kpi.radmonitor.ApiTest" time="0.015"/>
-  <testcase name="deniedWithoutToken" classname="ua.kpi.radmonitor.ApiTest" time="0.004"/>
+  <testcase name="duplicateRegistrationIsRejected" classname="ua.kpi.radmonitor.ApiTest" time="1.35"/>
+  <testcase name="offlineError" classname="ua.kpi.radmonitor.ApiTest" time="0.053"/>
+  <testcase name="loginAndProtectedEndpoint" classname="ua.kpi.radmonitor.ApiTest" time="0.021"/>
+  <testcase name="viewerRole" classname="ua.kpi.radmonitor.ApiTest" time="0.029"/>
+  <testcase name="wrongPassword" classname="ua.kpi.radmonitor.ApiTest" time="0.033"/>
+  <testcase name="expiredMockSessionIsRejected" classname="ua.kpi.radmonitor.ApiTest" time="0.041"/>
+  <testcase name="serviceUnavailable" classname="ua.kpi.radmonitor.ApiTest" time="0.061"/>
+  <testcase name="deniedWithoutToken" classname="ua.kpi.radmonitor.ApiTest" time="0.043"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

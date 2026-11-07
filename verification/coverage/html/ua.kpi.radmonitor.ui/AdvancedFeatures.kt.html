@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="uk"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AdvancedFeatures.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">ua.kpi.radmonitor.ui</a> &gt; <span class="el_source">AdvancedFeatures.kt</span></div><h1>AdvancedFeatures.kt</h1><pre class="source lang-java linenums">package ua.kpi.radmonitor.ui
+import ua.kpi.radmonitor.*
+import ua.kpi.radmonitor.domain.*
+import ua.kpi.radmonitor.data.*
+import ua.kpi.radmonitor.viewmodel.*
+import ua.kpi.radmonitor.device.*
+import ua.kpi.radmonitor.ui.*
+
+
+import android.app.*
+import android.content.*
+import android.graphics.pdf.PdfRenderer
+import android.os.ParcelFileDescriptor
+import androidx.core.app.NotificationCompat
+import androidx.work.*
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.callbackFlow
+import java.io.File
+import kotlin.math.*
+
+/** Two actual SensorManager streams, vector tilt, threshold and category controls. */
+@Composable
+<span class="nc bnc" id="L35" title="All 12 branches missed.">fun SensorExtras(vm: MonitorViewModel) {</span>
+<span class="nc" id="L36">    val a by vm.accelerometer.collectAsStateWithLifecycle()</span>
+<span class="nc" id="L37">    val g by vm.gyroscope.collectAsStateWithLifecycle()</span>
+<span class="nc" id="L38">    val enabled by vm.notifications.collectAsStateWithLifecycle()</span>
+<span class="nc" id="L39">    var showA by rememberSaveable { mutableStateOf(true) }</span>
+<span class="nc" id="L40">    var showG by rememberSaveable { mutableStateOf(true) }</span>
+<span class="nc" id="L41">    var threshold by rememberSaveable { mutableStateOf(&quot;12&quot;) }</span>
+<span class="nc" id="L42">    var minimum by rememberSaveable { mutableStateOf(&quot;0&quot;) }</span>
+<span class="nc" id="L43">    var descending by rememberSaveable { mutableStateOf(false) }</span>
+<span class="nc" id="L44">    var lastAlert by remember { mutableStateOf(0L) }</span>
+<span class="nc" id="L45">    var scale by remember { mutableStateOf(1f) }</span>
+<span class="nc" id="L46">    var purple by remember { mutableStateOf(false) }</span>
+<span class="nc" id="L47">    val c=androidx.compose.ui.platform.LocalContext.current</span>
+<span class="nc" id="L48">    val events = remember { callbackFlow {</span>
+<span class="nc" id="L49">        val prefs=c.getSharedPreferences(&quot;events&quot;,0)</span>
+<span class="nc" id="L50">        val listener=SharedPreferences.OnSharedPreferenceChangeListener { p,_ -&gt; trySend(p.all.values.map { it.toString() }) }</span>
+<span class="nc" id="L51">        prefs.registerOnSharedPreferenceChangeListener(listener);trySend(prefs.all.values.map { it.toString() })</span>
+<span class="nc" id="L52">        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }</span>
+<span class="nc" id="L53">    } }</span>
+<span class="nc" id="L54">    val eventRows by events.collectAsStateWithLifecycle(initialValue=emptyList())</span>
+<span class="nc bnc" id="L55" title="All 8 branches missed.">    LaunchedEffect(a, threshold, enabled) {</span>
+<span class="nc" id="L56">        val limit=threshold.toDoubleOrNull()</span>
+<span class="nc bnc" id="L57" title="All 20 branches missed.">        if(enabled &amp;&amp; showA &amp;&amp; limit!=null &amp;&amp; limit.isFinite() &amp;&amp; limit&gt;0 &amp;&amp; (a?.magnitude ?: 0.0)&gt;limit &amp;&amp; System.currentTimeMillis()-lastAlert&gt;30000) {</span>
+<span class="nc" id="L58">            lastAlert=System.currentTimeMillis();vm.schedule(&quot;sensor&quot;,&quot;Прискорення %.2f м/с² вище %.2f&quot;.format(a!!.magnitude,limit),0)</span>
+        }
+<span class="nc" id="L60">    }</span>
+<span class="nc" id="L61">    Text(&quot;Панель сенсорів&quot;,style=MaterialTheme.typography.headlineSmall)</span>
+<span class="nc" id="L62">    Row { Checkbox(showA,{showA=it});Text(&quot;Акселерометр&quot;);Checkbox(showG,{showG=it});Text(&quot;Гіроскоп&quot;) }</span>
+<span class="nc bnc" id="L63" title="All 16 branches missed.">    OutlinedTextField(threshold,{threshold=it},label={Text(&quot;Поріг прискорення, м/с²&quot;)},supportingText={Text(&quot;Подія за ввімкнених сповіщень; пауза між подіями 30 с&quot;)})</span>
+<span class="nc bnc" id="L64" title="All 8 branches missed.">    OutlinedTextField(minimum,{minimum=it},label={Text(&quot;Мінімальне значення у таблиці&quot;)})</span>
+<span class="nc bnc" id="L65" title="All 12 branches missed.">    TextButton(onClick={descending=!descending}) { Text(if(descending) &quot;Сортування: значення&quot; else &quot;Сортування: тип&quot;) }</span>
+<span class="nc bnc" id="L66" title="All 4 branches missed.">    val rows=listOfNotNull(if(showA) Triple(&quot;Акселерометр&quot;,a,&quot;м/с²&quot;) else null,if(showG) Triple(&quot;Гіроскоп&quot;,g,&quot;рад/с&quot;) else null)</span>
+<span class="nc bnc" id="L67" title="All 2 branches missed.">    (if(descending) rows.sortedByDescending { it.second?.magnitude ?: -1.0 } else rows.sortedBy { it.first }).forEach { (label,v,unit) -&gt;</span>
+<span class="nc bnc" id="L68" title="All 6 branches missed.">        if(v==null) Text(&quot;$label: датчик недоступний&quot;) else if(v.magnitude &gt;= (minimum.toDoubleOrNull() ?: 0.0))</span>
+<span class="nc" id="L69">            Text(&quot;$label: x=%.2f y=%.2f z=%.2f $unit&quot;.format(v.x,v.y,v.z))</span>
+<span class="nc" id="L70">    }</span>
+<span class="nc" id="L71">    Text(&quot;Нахил: зміщення точки за X/Y акселерометра; стрілка — X/Y гіроскопа&quot;)</span>
+<span class="nc" id="L72">    Canvas(Modifier.fillMaxWidth().height(120.dp)) {</span>
+<span class="nc" id="L73">        val center=Offset(size.width/2,size.height/2)</span>
+<span class="nc" id="L74">        drawCircle(Color.LightGray,45f,center)</span>
+<span class="nc bnc" id="L75" title="All 4 branches missed.">        a?.let { drawCircle(if(purple) Color.Magenta else Color(0xFF14675C),12f,center+Offset((it.x*8*scale).toFloat().coerceIn(-size.width/3,size.width/3),(it.y*8*scale).toFloat().coerceIn(-size.height/3,size.height/3))) }</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">        g?.let { drawLine(Color.Blue,center,center+Offset((it.x*15*scale).toFloat(),(it.y*15*scale).toFloat()),5f) }</span>
+<span class="nc" id="L77">    }</span>
+<span class="nc" id="L78">    Slider(scale,{scale=it},valueRange=.5f..3f)</span>
+<span class="nc bnc" id="L79" title="All 10 branches missed.">    TextButton(onClick={purple=!purple}){Text(&quot;Колір вектора&quot;)}</span>
+<span class="nc bnc" id="L80" title="All 28 branches missed.">    Row { Button(onClick={vm.schedule(&quot;reminder&quot;)}) {Text(&quot;Подія: нагадування&quot;)}; TextButton(onClick={vm.schedule(&quot;sensor&quot;,&quot;Тестова подія сенсора&quot;)}) {Text(&quot;Подія: сенсор&quot;)} }</span>
+<span class="nc" id="L81">    eventRows.takeLast(8).forEach { Text(it,style=MaterialTheme.typography.bodySmall) }</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">}</span>
+
+/** Local PDF page preview and bounded DOCX XML text preview; no external upload. */
+@Composable
+<span class="nc bnc" id="L86" title="All 14 branches missed.">fun DocumentPreview(file: File, close: () -&gt; Unit) {</span>
+<span class="nc" id="L87">    var text by remember(file) { mutableStateOf(&quot;Завантаження…&quot;) }</span>
+<span class="nc" id="L88">    var bitmap by remember(file) { mutableStateOf&lt;android.graphics.Bitmap?&gt;(null) }</span>
+<span class="nc" id="L89">    var page by remember(file) { mutableStateOf(0) }</span>
+<span class="nc" id="L90">    var count by remember(file) { mutableStateOf(1) }</span>
+<span class="nc" id="L91">    LaunchedEffect(file,page) {</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">        withContext(Dispatchers.IO) {</span>
+<span class="nc" id="L93">            try {</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">                if(file.extension==&quot;pdf&quot;) {</span>
+<span class="nc" id="L95">                    ParcelFileDescriptor.open(file,ParcelFileDescriptor.MODE_READ_ONLY).use { fd -&gt; PdfRenderer(fd).use { renderer -&gt;</span>
+<span class="nc" id="L96">                        count=renderer.pageCount</span>
+<span class="nc" id="L97">                        renderer.openPage(page).use { p -&gt;</span>
+<span class="nc" id="L98">                            val image=android.graphics.Bitmap.createBitmap(800,(800.0*p.height/p.width).toInt(),android.graphics.Bitmap.Config.ARGB_8888)</span>
+<span class="nc" id="L99">                            image.eraseColor(android.graphics.Color.WHITE);p.render(image,null,null,PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);bitmap=image</span>
+<span class="nc" id="L100">                        }</span>
+<span class="nc" id="L101">                    } };text=&quot;Сторінка ${page+1} з $count&quot;</span>
+                } else {
+<span class="nc" id="L103">                    java.util.zip.ZipFile(file).use { zip -&gt;</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">                        val entry=zip.getEntry(&quot;word/document.xml&quot;) ?: error(&quot;Немає тексту DOCX&quot;)</span>
+<span class="nc" id="L105">                        val xml=zip.getInputStream(entry).use { input -&gt;</span>
+<span class="nc" id="L106">                            val out=java.io.ByteArrayOutputStream();val buffer=ByteArray(8192)</span>
+<span class="nc bnc" id="L107" title="All 6 branches missed.">                            while(true) {val n=input.read(buffer);if(n&lt;0)break;require(out.size()+n&lt;=1000000){&quot;Документ завеликий&quot;};out.write(buffer,0,n)};out.toByteArray()</span>
+                        }
+<span class="nc bnc" id="L109" title="All 4 branches missed.">                        require(xml.size&lt;=1000000) { &quot;Документ завеликий для текстового перегляду&quot; }</span>
+<span class="nc" id="L110">                        val parser=android.util.Xml.newPullParser();parser.setInput(xml.inputStream(),&quot;UTF-8&quot;)</span>
+<span class="nc" id="L111">                        val result=StringBuilder();var event=parser.eventType</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">                        while(event!=org.xmlpull.v1.XmlPullParser.END_DOCUMENT) {</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">                            if(event==org.xmlpull.v1.XmlPullParser.TEXT) result.append(parser.text)</span>
+<span class="nc bnc" id="L114" title="All 4 branches missed.">                            if(event==org.xmlpull.v1.XmlPullParser.END_TAG &amp;&amp; parser.name==&quot;p&quot;) result.append('\n')</span>
+<span class="nc" id="L115">                            event=parser.next()</span>
+<span class="nc" id="L116">                        };text=result.toString().take(30000)</span>
+<span class="nc" id="L117">                    }</span>
+                }
+<span class="nc" id="L119">            } catch(e:Exception) { text=&quot;Не вдалося відкрити: ${e.message}&quot; }</span>
+<span class="nc" id="L120">        }</span>
+<span class="nc" id="L121">    }</span>
+<span class="nc bnc" id="L122" title="All 26 branches missed.">    AlertDialog(onDismissRequest=close, confirmButton={TextButton(onClick=close){Text(&quot;Закрити&quot;)}},title={Text(file.name)},text={</span>
+<span class="nc bnc" id="L123" title="All 6 branches missed.">        Column(Modifier.verticalScroll(rememberScrollState())) {</span>
+<span class="nc" id="L124">            Text(text)</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">            bitmap?.let { Image(it.asImageBitmap(),&quot;Сторінка PDF&quot;,Modifier.fillMaxWidth()) }</span>
+<span class="nc bnc" id="L126" title="All 18 branches missed.">            if(file.extension==&quot;pdf&quot;) Row { TextButton(onClick={page=(page-1).coerceAtLeast(0)}){Text(&quot;Назад&quot;)};TextButton(onClick={page=(page+1).coerceAtMost(count-1)}){Text(&quot;Далі&quot;)} }</span>
+<span class="nc" id="L127">        }</span>
+<span class="nc" id="L128">    })</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">}</span>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

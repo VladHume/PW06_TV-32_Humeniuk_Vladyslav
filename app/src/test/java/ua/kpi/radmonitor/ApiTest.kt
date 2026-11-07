@@ -1,4 +1,11 @@
 package ua.kpi.radmonitor
+import ua.kpi.radmonitor.*
+import ua.kpi.radmonitor.domain.*
+import ua.kpi.radmonitor.data.*
+import ua.kpi.radmonitor.viewmodel.*
+import ua.kpi.radmonitor.device.*
+import ua.kpi.radmonitor.ui.*
+
 
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
@@ -71,5 +78,20 @@ class ApiTest {
         } catch (e: java.io.IOException) {
             assertTrue(e.message!!.contains("мережі"))
         }
+    }
+
+    @Test fun expiredMockSessionIsRejected() = runBlocking {
+        val session = api.login(LoginRequest("operator@demo.ua", "Demo12345"))
+        assertTrue(session.token.startsWith("demo.operator."))
+        assertTrue(session.expiresAt > System.currentTimeMillis())
+        mock.scenario = "Сеанс завершено"
+        try { api.measurements("Bearer ${session.token}"); fail("Expected 401") }
+        catch (e: HttpException) { assertEquals(401, e.code()) }
+    }
+    @Test fun duplicateRegistrationIsRejected() = runBlocking {
+        val body=RegistrationRequest("User","new@demo.ua","Demo12345")
+        assertEquals("viewer", api.register(body).role)
+        try { api.register(body); fail("Expected 400") }
+        catch(e: HttpException) { assertEquals(400,e.code()) }
     }
 }

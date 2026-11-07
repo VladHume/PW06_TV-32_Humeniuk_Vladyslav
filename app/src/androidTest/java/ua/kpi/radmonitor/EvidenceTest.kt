@@ -1,8 +1,16 @@
 package ua.kpi.radmonitor
+import ua.kpi.radmonitor.*
+import ua.kpi.radmonitor.domain.*
+import ua.kpi.radmonitor.data.*
+import ua.kpi.radmonitor.viewmodel.*
+import ua.kpi.radmonitor.device.*
+import ua.kpi.radmonitor.ui.*
+
 
 import android.graphics.Bitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.*
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.platform.app.InstrumentationRegistry
 import java.io.File
@@ -42,7 +50,7 @@ class EvidenceTest {
         }
         capture("02-dashboard")
         if (BuildConfig.PRACTICAL >= 2) {
-            rule.onNodeWithText("Додати демонстраційні пости").performScrollTo().performClick()
+            rule.onNodeWithText("Додати демонстраційні пости").performScrollTo().performSemanticsAction(SemanticsActions.OnClick) { it() }
             rule.waitUntil(10000) {
                 rule.onAllNodesWithText("Записів у журналі: 3").fetchSemanticsNodes().isNotEmpty()
             }

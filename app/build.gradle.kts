@@ -3,6 +3,7 @@ plugins {
  id("org.jetbrains.kotlin.android")
  id("org.jetbrains.kotlin.plugin.compose")
  id("org.jetbrains.kotlin.kapt")
+ jacoco
 }
 val practical = providers.gradleProperty("practical").orElse("6").get().toInt()
 android {
@@ -18,6 +19,14 @@ android {
   testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   buildConfigField("int", "PRACTICAL", practical.toString())
  }
+ // Optional dimension preserves a simple default build while allowing an explicit demo flavor.
+ if (providers.gradleProperty("withFlavors").orNull == "true") {
+  flavorDimensions += "distribution"
+  productFlavors {
+   create("demo") { dimension = "distribution"; applicationIdSuffix = ".demo"; versionNameSuffix = "-demo" }
+   create("full") { dimension = "distribution" }
+  }
+ }
  buildFeatures { compose = true; buildConfig = true }
  compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
  kotlinOptions { jvmTarget = "17" }
@@ -30,8 +39,10 @@ android {
   }
  }
  buildTypes {
-  release { if (System.getenv("RAD_RELEASE_STORE") != null) signingConfig = signingConfigs.getByName("courseRelease"); isMinifyEnabled = true; proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro") }
+  debug { enableUnitTestCoverage = providers.gradleProperty("coverage").orNull == "true" }
+  release { testProguardFiles("test-proguard-rules.pro"); if (System.getenv("RAD_RELEASE_STORE") != null) signingConfig = signingConfigs.getByName("courseRelease"); isMinifyEnabled = true; proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro") }
  }
+ testBuildType = providers.gradleProperty("testBuildType").orElse("debug").get()
  testOptions { unitTests.isIncludeAndroidResources = true }
  packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
 }
@@ -57,9 +68,21 @@ dependencies {
  testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
  testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
  testImplementation("org.robolectric:robolectric:4.14.1")
+ androidTestImplementation("com.google.errorprone:error_prone_annotations:2.30.0")
  androidTestImplementation(platform("androidx.compose:compose-bom:2024.12.01"))
  androidTestImplementation("androidx.compose.ui:ui-test-junit4")
  androidTestImplementation("androidx.test.ext:junit:1.2.1")
  debugImplementation("androidx.compose.ui:ui-test-manifest")
  debugImplementation("androidx.compose.ui:ui-tooling")
+}
+
+jacoco { toolVersion = "0.8.12" }
+tasks.register<JacocoReport>("coverageReport") {
+ dependsOn("testDebugUnitTest")
+ executionData(layout.buildDirectory.file("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec"))
+ sourceDirectories.setFrom(files("src/main/java"))
+ classDirectories.setFrom(fileTree(layout.buildDirectory.dir("tmp/kotlin-classes/debug")) {
+  exclude("**/R.class", "**/R$*.class", "**/BuildConfig.*", "**/*_Impl*", "**/*Test*")
+ })
+ reports { xml.required.set(true); html.required.set(true) }
 }

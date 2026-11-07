@@ -18,12 +18,13 @@ class Handler(BaseHTTPRequestHandler):
     accounts[email]=password
    elif self.path!='/login':return self.respond(404,{})
    if accounts.get(email)!=password:return self.respond(401,{})
-   token=secrets.token_urlsafe(24);role='operator' if email=='operator@demo.ua' else 'viewer';tokens[token]=role
-   self.respond(200,{'token':token,'role':role})
+   token=secrets.token_urlsafe(24);role='operator' if email=='operator@demo.ua' else 'viewer';expires=int(time.time()*1000)+3600000;tokens[token]=(role,expires)
+   self.respond(200,{'token':token,'role':role,'expiresAt':expires})
   except (ValueError,TypeError):self.respond(400,{})
  def do_GET(self):
   if self.path!='/measurements':return self.respond(404,{})
-  if self.headers.get('Authorization','').removeprefix('Bearer ') not in tokens:return self.respond(401,{})
+  session=tokens.get(self.headers.get('Authorization','').removeprefix('Bearer '))
+  if session is None or session[1]<=int(time.time()*1000):return self.respond(401,{})
   rows=[dict(id=f'post-{n}',name=f'Пост {n.upper()}',type=t,doseRate=d,powerMw=p,latitude=50.45+j*.01,longitude=30.52+j*.01,timestamp=int(time.time()*1000)) for j,(n,t,d,p) in enumerate([('a','Периметр',.12,980),('b','Зал',.18,1010),('c','Контроль',.34,995)])]
   self.respond(200,rows)
  def log_message(self,*args):pass

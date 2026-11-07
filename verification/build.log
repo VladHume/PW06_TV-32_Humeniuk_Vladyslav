@@ -49,7 +49,6 @@
 > Task :app:mergeExtDexDebugAndroidTest UP-TO-DATE
 > Task :app:mergeLibDexDebugAndroidTest UP-TO-DATE
 > Task :app:mergeDebugAndroidTestJniLibFolders UP-TO-DATE
-> Task :app:processDebugManifestForPackage
 > Task :app:mergeDebugAndroidTestNativeLibs NO-SOURCE
 > Task :app:stripDebugAndroidTestDebugSymbols NO-SOURCE
 > Task :app:validateSigningDebugAndroidTest UP-TO-DATE
@@ -69,10 +68,8 @@
 > Task :app:parseReleaseLocalResources UP-TO-DATE
 > Task :app:createReleaseCompatibleScreenManifests UP-TO-DATE
 > Task :app:extractDeepLinksRelease UP-TO-DATE
-> Task :app:processReleaseMainManifest UP-TO-DATE
-> Task :app:processReleaseManifest UP-TO-DATE
-> Task :app:processReleaseManifestForPackage UP-TO-DATE
-> Task :app:processReleaseResources UP-TO-DATE
+> Task :app:processReleaseMainManifest
+> Task :app:processReleaseManifest
 > Task :app:javaPreCompileRelease UP-TO-DATE
 > Task :app:mergeReleaseJniLibFolders UP-TO-DATE
 > Task :app:mergeReleaseNativeLibs UP-TO-DATE
@@ -88,81 +85,86 @@
 > Task :app:mergeReleaseAssets UP-TO-DATE
 > Task :app:compressReleaseAssets UP-TO-DATE
 > Task :app:extractReleaseVersionControlInfo UP-TO-DATE
-> Task :app:optimizeReleaseResources UP-TO-DATE
-> Task :app:processDebugAndroidTestResources
 > Task :app:collectReleaseDependencies UP-TO-DATE
 > Task :app:sdkReleaseDependencyData UP-TO-DATE
 > Task :app:validateSigningRelease UP-TO-DATE
+> Task :app:writeReleaseAppMetadata UP-TO-DATE
+> Task :app:writeReleaseSigningConfigVersions UP-TO-DATE
+> Task :app:processApplicationManifestReleaseForBundle
+> Task :app:configureReleaseDependencies UP-TO-DATE
+> Task :app:parseReleaseIntegrityConfig UP-TO-DATE
+> Task :app:processReleaseManifestForPackage
+> Task :app:processDebugManifestForPackage
+> Task :app:processDebugAndroidTestResources
+> Task :app:processReleaseResources
 > Task :app:processDebugResources
 > Task :app:packageDebugUnitTestForUnitTest UP-TO-DATE
 > Task :app:generateDebugUnitTestConfig UP-TO-DATE
-> Task :app:writeReleaseAppMetadata UP-TO-DATE
-> Task :app:writeReleaseSigningConfigVersions UP-TO-DATE
-> Task :app:processApplicationManifestReleaseForBundle UP-TO-DATE
-> Task :app:bundleReleaseResources UP-TO-DATE
-> Task :app:configureReleaseDependencies UP-TO-DATE
-> Task :app:parseReleaseIntegrityConfig UP-TO-DATE
+> Task :app:bundleReleaseResources
+> Task :app:optimizeReleaseResources
 
 > Task :app:kaptGenerateStubsDebugKotlin
 w: Kapt currently doesn't support language version 2.0+. Falling back to 1.9.
 
+> Task :app:kaptDebugKotlin
+
 > Task :app:kaptGenerateStubsReleaseKotlin
 w: Kapt currently doesn't support language version 2.0+. Falling back to 1.9.
 
-> Task :app:kaptReleaseKotlin UP-TO-DATE
-> Task :app:kaptDebugKotlin
-> Task :app:compileReleaseKotlin
-> Task :app:compileReleaseJavaWithJavac UP-TO-DATE
-> Task :app:generateReleaseLintVitalReportModel
-> Task :app:mergeReleaseGeneratedProguardFiles UP-TO-DATE
-> Task :app:processReleaseJavaRes UP-TO-DATE
-> Task :app:mergeReleaseJavaResource UP-TO-DATE
-> Task :app:expandReleaseArtProfileWildcards
+> Task :app:kaptReleaseKotlin
 > Task :app:compileDebugKotlin
 > Task :app:compileDebugJavaWithJavac
 > Task :app:dexBuilderDebug
 > Task :app:mergeDebugGlobalSynthetics UP-TO-DATE
 > Task :app:processDebugJavaRes UP-TO-DATE
 > Task :app:mergeDebugJavaResource UP-TO-DATE
-> Task :app:bundleDebugClassesToRuntimeJar
 > Task :app:bundleDebugClassesToCompileJar
+> Task :app:bundleDebugClassesToRuntimeJar
 > Task :app:generateDebugLintReportModel
 > Task :app:mergeProjectDexDebug
+> Task :app:kaptGenerateStubsDebugUnitTestKotlin UP-TO-DATE
 
 > Task :app:kaptGenerateStubsDebugAndroidTestKotlin
 w: Kapt currently doesn't support language version 2.0+. Falling back to 1.9.
 
-> Task :app:kaptGenerateStubsDebugUnitTestKotlin UP-TO-DATE
+> Task :app:kaptDebugUnitTestKotlin
 > Task :app:packageDebug
 > Task :app:createDebugApkListingFileRedirect
 > Task :app:assembleDebug
-> Task :app:kaptDebugAndroidTestKotlin
-> Task :app:kaptDebugUnitTestKotlin
 > Task :app:compileDebugUnitTestKotlin UP-TO-DATE
 > Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
 > Task :app:processDebugUnitTestJavaRes UP-TO-DATE
-> Task :app:compileDebugAndroidTestKotlin
-> Task :app:lintVitalAnalyzeRelease
-> Task :app:minifyReleaseWithR8
+> Task :app:kaptDebugAndroidTestKotlin
+> Task :app:compileReleaseKotlin
 > Task :app:testDebugUnitTest
+> Task :app:generateDebugAndroidTestLintModel
+> Task :app:generateDebugUnitTestLintModel
+> Task :app:compileDebugAndroidTestKotlin
+> Task :app:compileReleaseJavaWithJavac
 > Task :app:compileDebugAndroidTestJavaWithJavac
 > Task :app:dexBuilderDebugAndroidTest
 > Task :app:mergeDebugAndroidTestGlobalSynthetics UP-TO-DATE
 > Task :app:processDebugAndroidTestJavaRes UP-TO-DATE
 > Task :app:mergeDebugAndroidTestJavaResource UP-TO-DATE
 > Task :app:mergeProjectDexDebugAndroidTest
-> Task :app:generateDebugAndroidTestLintModel
-> Task :app:generateDebugUnitTestLintModel
-> Task :app:lintVitalReportRelease UP-TO-DATE
-> Task :app:lintVitalRelease
+> Task :app:generateReleaseLintVitalReportModel
+> Task :app:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :app:processReleaseJavaRes
+> Task :app:expandReleaseArtProfileWildcards
+> Task :app:mergeReleaseJavaResource
+> Task :app:lintAnalyzeDebugUnitTest
+> Task :app:lintAnalyzeDebugAndroidTest
+> Task :app:coverageReport
 > Task :app:packageDebugAndroidTest
 > Task :app:createDebugAndroidTestApkListingFileRedirect
 > Task :app:assembleDebugAndroidTest
-> Task :app:lintAnalyzeDebugAndroidTest
-> Task :app:lintAnalyzeDebugUnitTest
+> Task :app:lintVitalAnalyzeRelease
+> Task :app:lintVitalReportRelease
+> Task :app:lintVitalRelease
 > Task :app:lintAnalyzeDebug
 > Task :app:lintReportDebug UP-TO-DATE
 > Task :app:lintDebug
+> Task :app:minifyReleaseWithR8
 > Task :app:buildReleasePreBundle
 > Task :app:compileReleaseArtProfile
 > Task :app:packageRelease
@@ -174,5 +176,5 @@ w: Kapt currently doesn't support language version 2.0+. Falling back to 1.9.
 > Task :app:createReleaseBundleListingFileRedirect UP-TO-DATE
 > Task :app:bundleRelease
 
-BUILD SUCCESSFUL in 3m 32s
-146 actionable tasks: 49 executed, 97 up-to-date
+BUILD SUCCESSFUL in 2m 8s
+147 actionable tasks: 62 executed, 85 up-to-date

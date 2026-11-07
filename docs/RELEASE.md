@@ -24,4 +24,17 @@
 
 ## Поведінка даних
 
-У режимі mock облікові дані й токени залишаються в пам’яті процесу. Записи, вибрані файли та PDF зберігаються локально. GPS використовується лише після дозволу для показу позиції на мапі. Запити тайлів OpenStreetMap використовують інтернет. За явного налаштування зовнішнього API дані входу надсилаються на введену адресу. Для реальних серверів клієнт вимагає HTTPS; HTTP дозволено лише для localhost і адреси хоста емулятора 10.0.2.2.
+У режимі mock реєстрації залишаються в пам’яті процесу; демонстраційні токени та їхній строк дії зберігаються в локальних preferences. Це навчальна реалізація, а не production-сховище секретів. Записи, вибрані файли та PDF зберігаються локально. GPS використовується лише після дозволу для показу позиції на мапі. Запити тайлів OpenStreetMap використовують інтернет. За явного налаштування зовнішнього API дані входу надсилаються на введену адресу. Для реальних серверів клієнт вимагає HTTPS; HTTP дозволено лише для localhost і адреси хоста емулятора 10.0.2.2.
+
+## Варіанти та перевірки після аудиту
+
+- `./gradlew -PwithFlavors=true assembleDemoDebug` — flavor demo з суфіксом applicationId `.demo`.
+- `./gradlew -PwithFlavors=true assembleFullDebug` — flavor full.
+- `./gradlew -Pcoverage=true testDebugUnitTest coverageReport` — локальні тести й JaCoCo HTML/XML. Це окреме покриття локальних тестів, без об’єднання з instrumentation.
+- `./gradlew -PtestBuildType=release assembleRelease assembleReleaseAndroidTest` — тестова збірка для перевірки оптимізованого релізу з тим самим локальним ключем.
+
+Графіка та опис даних: `docs/play/`. Знімки: `evidence/`. Фактичні результати: `verification/`. Офіційні пояснення конфігурації: https://developer.android.com/build/build-variants та https://developer.android.com/studio/test/advanced-test-setup . Шаблон CI не активовано через обмеження токена, але локальні команди виконані.
+
+### R8 і release instrumentation
+
+У навчальному релізі збережено імена та точки входу застосунку, Compose, Lifecycle/SavedState/Activity, Kotlin/coroutines і tracing, спільні з instrumentation APK. R8 увімкнено, але ці keep-правила обмежують його скорочення/обфускацію; це компроміс для відтворюваного тестування, а не максимально малий production APK. Команда `-PtestBuildType=release assembleReleaseAndroidTest` створює окремий тестовий пакет.

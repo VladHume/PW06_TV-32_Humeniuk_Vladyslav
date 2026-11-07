@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="uk"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Domain.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">ua.kpi.radmonitor.domain</a> &gt; <span class="el_source">Domain.kt</span></div><h1>Domain.kt</h1><pre class="source lang-java linenums">package ua.kpi.radmonitor.domain
+import ua.kpi.radmonitor.*
+import ua.kpi.radmonitor.domain.*
+import ua.kpi.radmonitor.data.*
+import ua.kpi.radmonitor.viewmodel.*
+import ua.kpi.radmonitor.device.*
+import ua.kpi.radmonitor.ui.*
+
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import kotlin.math.*
+
+/** Навчальний запис. Координати належать вигаданим постам, не реальній АЕС. */
+@Entity(tableName = &quot;measurements&quot;)
+<span class="fc" id="L18">data class Measurement(</span>
+<span class="fc" id="L19">    @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),</span>
+<span class="fc" id="L20">    val name: String = &quot;Пост A&quot;,</span>
+<span class="fc" id="L21">    val type: String = &quot;Периметр&quot;,</span>
+<span class="fc" id="L22">    val doseRate: Double = 0.12,</span>
+<span class="fc" id="L23">    val powerMw: Double = 1000.0,</span>
+<span class="fc" id="L24">    val latitude: Double = 50.45,</span>
+<span class="fc" id="L25">    val longitude: Double = 30.52,</span>
+<span class="fc" id="L26">    val timestamp: Long = System.currentTimeMillis(),</span>
+<span class="fc" id="L27">)</span>
+
+object MonitorLogic {
+    // Поріг є параметром навчальної моделі, а не нормативом радіаційної безпеки.
+    const val DEMO_THRESHOLD = 0.30
+
+    fun dose(rate: Double, hours: Double): Double {
+<span class="pc bpc" id="L34" title="4 of 18 branches missed.">        require(rate.isFinite() &amp;&amp; hours.isFinite() &amp;&amp; rate &gt;= 0 &amp;&amp; hours &gt;= 0)</span>
+<span class="pc bpc" id="L35" title="1 of 6 branches missed.">        return (rate * hours).also { require(it.isFinite()) }</span>
+    }
+
+    fun validate(m: Measurement): String? =
+<span class="fc" id="L39">        when {</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">            m.name.isBlank() -&gt; &quot;Вкажіть назву поста&quot;</span>
+<span class="pc bpc" id="L41" title="1 of 2 branches missed.">            m.name.length &gt; 80 -&gt; &quot;Назва: не більше 80 символів&quot;</span>
+<span class="pc bpc" id="L42" title="1 of 2 branches missed.">            m.type !in listOf(&quot;Периметр&quot;, &quot;Зал&quot;, &quot;Контроль&quot;) -&gt; &quot;Невідомий тип поста&quot;</span>
+<span class="pc bpc" id="L43" title="3 of 8 branches missed.">            !m.doseRate.isFinite() || m.doseRate &lt; 0 -&gt; &quot;Показник має бути скінченним і невід’ємним&quot;</span>
+<span class="pc bpc" id="L44" title="4 of 8 branches missed.">            !m.powerMw.isFinite() || m.powerMw &lt; 0 -&gt; &quot;Потужність має бути невід’ємною&quot;</span>
+<span class="pc bpc" id="L45" title="4 of 12 branches missed.">            !m.latitude.isFinite() || m.latitude !in -90.0..90.0 -&gt; &quot;Широта: від -90 до 90&quot;</span>
+<span class="pc bpc" id="L46" title="4 of 12 branches missed.">            !m.longitude.isFinite() || m.longitude !in -180.0..180.0 -&gt; &quot;Довгота: від -180 до 180&quot;</span>
+<span class="pc bpc" id="L47" title="2 of 4 branches missed.">            m.timestamp &lt; 0 || m.id.isBlank() -&gt; &quot;Некоректний ідентифікатор або дата&quot;</span>
+<span class="fc" id="L48">            else -&gt; null</span>
+<span class="fc" id="L49">        }</span>
+
+    fun filter(
+        items: List&lt;Measurement&gt;,
+        query: String,
+        type: String,
+        sort: String,
+    ): List&lt;Measurement&gt; {
+<span class="fc" id="L57">        val result =</span>
+<span class="fc" id="L58">            items.filter {</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">                it.name.contains(query.trim(), ignoreCase = true) &amp;&amp;</span>
+<span class="pc bpc" id="L60" title="1 of 4 branches missed.">                    (type == &quot;Усі&quot; || it.type == type)</span>
+            }
+<span class="pc bpc" id="L62" title="3 of 5 branches missed.">        return when (sort) {</span>
+<span class="nc" id="L63">            &quot;Назва&quot; -&gt; result.sortedBy { it.name.lowercase() }</span>
+<span class="nc" id="L64">            &quot;Тип&quot; -&gt; result.sortedWith(compareBy&lt;Measurement&gt; { it.type }.thenBy { it.name })</span>
+<span class="fc" id="L65">            &quot;Показник&quot; -&gt; result.sortedByDescending { it.doseRate }</span>
+<span class="nc" id="L66">            &quot;Потужність&quot; -&gt; result.sortedByDescending { it.powerMw }</span>
+<span class="fc" id="L67">            else -&gt; result.sortedByDescending { it.timestamp }</span>
+        }
+    }
+
+    fun validateLogin(email: String, password: String): String? =
+<span class="fc" id="L72">        when {</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">            !Regex(&quot;^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$&quot;).matches(email) -&gt; &quot;Введіть коректний email&quot;</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">            password.length &lt; 8 -&gt; &quot;Пароль має містити щонайменше 8 символів&quot;</span>
+<span class="fc" id="L75">            else -&gt; null</span>
+<span class="fc" id="L76">        }</span>
+
+    fun samples() =
+<span class="fc" id="L79">        listOf(</span>
+<span class="fc" id="L80">            Measurement(&quot;post-a&quot;, &quot;Пост A&quot;, &quot;Периметр&quot;, .12, 980.0, 50.45, 30.52),</span>
+<span class="fc" id="L81">            Measurement(&quot;post-b&quot;, &quot;Пост B&quot;, &quot;Зал&quot;, .18, 1010.0, 50.46, 30.53),</span>
+<span class="fc" id="L82">            Measurement(&quot;post-c&quot;, &quot;Пост C&quot;, &quot;Контроль&quot;, .34, 995.0, 50.44, 30.51),</span>
+<span class="fc" id="L83">        )</span>
+}
+
+/** CSV із quoted fields: назви з комою, лапками та переносом рядка підтримуються. */
+object Exchange {
+<span class="fc" id="L88">    private val gson = Gson()</span>
+    private val header =
+<span class="fc" id="L90">        listOf(&quot;id&quot;, &quot;name&quot;, &quot;type&quot;, &quot;doseRate&quot;, &quot;powerMw&quot;, &quot;latitude&quot;, &quot;longitude&quot;, &quot;timestamp&quot;)</span>
+
+<span class="fc" id="L92">    fun json(items: List&lt;Measurement&gt;) = gson.toJson(items)</span>
+
+    fun fromJson(text: String): List&lt;Measurement&gt; {
+<span class="fc" id="L95">        val rows: List&lt;Measurement&gt; =</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">            gson.fromJson(text, object : TypeToken&lt;List&lt;Measurement&gt;&gt;() {}.type)</span>
+<span class="nc" id="L97">                ?: error(&quot;Порожній JSON&quot;)</span>
+<span class="fc" id="L98">        return checked(rows)</span>
+    }
+
+    private fun checked(rows: List&lt;Measurement&gt;): List&lt;Measurement&gt; {
+<span class="pc bpc" id="L102" title="2 of 4 branches missed.">        require(rows.size &lt;= 10000) { &quot;Не більше 10000 записів&quot; }</span>
+<span class="fc bfc" id="L103" title="All 4 branches covered.">        require(rows.map { it.id }.distinct().size == rows.size) { &quot;Повторні ID&quot; }</span>
+<span class="fc" id="L104">        rows.forEach {</span>
+<span class="fc bfc" id="L105" title="All 4 branches covered.">            require(MonitorLogic.validate(it) == null) {</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">                MonitorLogic.validate(it) ?: &quot;Некоректний запис&quot;</span>
+            }
+<span class="fc" id="L108">        }</span>
+<span class="fc" id="L109">        return rows</span>
+    }
+
+    fun csv(items: List&lt;Measurement&gt;): String =
+<span class="fc" id="L113">        (listOf(header) +</span>
+<span class="fc" id="L114">                items.map {</span>
+<span class="fc" id="L115">                    listOf(</span>
+<span class="fc" id="L116">                        it.id,</span>
+<span class="fc" id="L117">                        it.name,</span>
+<span class="fc" id="L118">                        it.type,</span>
+<span class="fc" id="L119">                        it.doseRate.toString(),</span>
+<span class="fc" id="L120">                        it.powerMw.toString(),</span>
+<span class="fc" id="L121">                        it.latitude.toString(),</span>
+<span class="fc" id="L122">                        it.longitude.toString(),</span>
+<span class="fc" id="L123">                        it.timestamp.toString(),</span>
+<span class="fc" id="L124">                    )</span>
+                })
+<span class="fc" id="L126">            .joinToString(&quot;\r\n&quot;) { row -&gt;</span>
+<span class="fc" id="L127">                row.joinToString(&quot;,&quot;) { &quot;\&quot;&quot; + it.replace(&quot;\&quot;&quot;, &quot;\&quot;\&quot;&quot;) + &quot;\&quot;&quot; }</span>
+<span class="fc" id="L128">            }</span>
+
+    fun fromCsv(text: String): List&lt;Measurement&gt; {
+<span class="fc" id="L131">        val rows = mutableListOf&lt;List&lt;String&gt;&gt;()</span>
+<span class="fc" id="L132">        var row = mutableListOf&lt;String&gt;()</span>
+<span class="fc" id="L133">        val field = StringBuilder()</span>
+<span class="fc" id="L134">        var quoted = false</span>
+<span class="fc" id="L135">        var i = 0</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">        while (i &lt; text.length) {</span>
+<span class="fc" id="L137">            val c = text[i]</span>
+<span class="fc" id="L138">            when {</span>
+<span class="fc bfc" id="L139" title="All 8 branches covered.">                c == '&quot;' &amp;&amp; quoted &amp;&amp; i + 1 &lt; text.length &amp;&amp; text[i + 1] == '&quot;' -&gt; {</span>
+<span class="fc" id="L140">                    field.append('&quot;')</span>
+<span class="fc" id="L141">                    i++</span>
+                }
+<span class="fc bfc" id="L143" title="All 4 branches covered.">                c == '&quot;' -&gt; quoted = !quoted</span>
+<span class="fc bfc" id="L144" title="All 4 branches covered.">                c == ',' &amp;&amp; !quoted -&gt; {</span>
+<span class="fc" id="L145">                    row.add(field.toString())</span>
+<span class="fc" id="L146">                    field.clear()</span>
+                }
+<span class="fc bfc" id="L148" title="All 6 branches covered.">                (c == '\n' || c == '\r') &amp;&amp; !quoted -&gt; {</span>
+<span class="fc" id="L149">                    row.add(field.toString())</span>
+<span class="fc" id="L150">                    field.clear()</span>
+<span class="fc" id="L151">                    rows.add(row)</span>
+<span class="fc" id="L152">                    row = mutableListOf()</span>
+<span class="pc bpc" id="L153" title="3 of 6 branches missed.">                    if (c == '\r' &amp;&amp; i + 1 &lt; text.length &amp;&amp; text[i + 1] == '\n') i++</span>
+                }
+<span class="fc" id="L155">                else -&gt; field.append(c)</span>
+            }
+<span class="fc" id="L157">            i++</span>
+        }
+<span class="fc bfc" id="L159" title="All 4 branches covered.">        require(!quoted) { &quot;Незакрита лапка CSV&quot; }</span>
+<span class="pc bpc" id="L160" title="6 of 8 branches missed.">        if (field.isNotEmpty() || row.isNotEmpty()) {</span>
+<span class="fc" id="L161">            row.add(field.toString())</span>
+<span class="fc" id="L162">            rows.add(row)</span>
+        }
+<span class="fc bfc" id="L164" title="All 2 branches covered.">        require(rows.firstOrNull() == header) { &quot;Некоректний заголовок CSV&quot; }</span>
+<span class="fc" id="L165">        return checked(</span>
+<span class="fc" id="L166">            rows.drop(1).map { r -&gt;</span>
+<span class="pc bpc" id="L167" title="2 of 4 branches missed.">                require(r.size == 8) { &quot;Очікується 8 колонок&quot; }</span>
+<span class="fc" id="L168">                Measurement(</span>
+<span class="fc" id="L169">                    r[0],</span>
+<span class="fc" id="L170">                    r[1],</span>
+<span class="fc" id="L171">                    r[2],</span>
+<span class="fc" id="L172">                    r[3].toDouble(),</span>
+<span class="fc" id="L173">                    r[4].toDouble(),</span>
+<span class="fc" id="L174">                    r[5].toDouble(),</span>
+<span class="fc" id="L175">                    r[6].toDouble(),</span>
+<span class="fc" id="L176">                    r[7].toLong(),</span>
+<span class="fc" id="L177">                )</span>
+            }
+        )
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
