@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="ua.kpi.radmonitor.HttpIntegrationTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-11-07T12:50:01" hostname="Mac" time="0.202">
+  <properties/>
+  <testcase name="parsesHttpAndSendsAuthorization" classname="ua.kpi.radmonitor.HttpIntegrationTest" time="0.202"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

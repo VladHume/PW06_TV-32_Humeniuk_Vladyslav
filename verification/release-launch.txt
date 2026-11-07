@@ -1,0 +1,3 @@
+Signed release APK installed successfully on Android 15 API 35 emulator.
+Activity ua.kpi.radmonitor.MainActivity launched: Status ok, LaunchState COLD, TotalTime 341ms. Process remained alive after launch.
+This is a launch smoke check; full instrumentation tests were performed on debug builds.

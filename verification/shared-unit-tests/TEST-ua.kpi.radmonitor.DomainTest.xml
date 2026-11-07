@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="ua.kpi.radmonitor.DomainTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-11-07T12:50:01" hostname="Mac" time="0.102">
+  <properties/>
+  <testcase name="filterAndSort" classname="ua.kpi.radmonitor.DomainTest" time="0.016"/>
+  <testcase name="csvQuotedFieldsRoundTrip" classname="ua.kpi.radmonitor.DomainTest" time="0.049"/>
+  <testcase name="rejectMalformedCsv" classname="ua.kpi.radmonitor.DomainTest" time="0.002"/>
+  <testcase name="rejectDuplicateIds" classname="ua.kpi.radmonitor.DomainTest" time="0.009"/>
+  <testcase name="coordinateLimits" classname="ua.kpi.radmonitor.DomainTest" time="0.001"/>
+  <testcase name="zeroDuration" classname="ua.kpi.radmonitor.DomainTest" time="0.0"/>
+  <testcase name="validateCredentials" classname="ua.kpi.radmonitor.DomainTest" time="0.001"/>
+  <testcase name="rejectNegativeReading" classname="ua.kpi.radmonitor.DomainTest" time="0.0"/>
+  <testcase name="rejectInvalidDose" classname="ua.kpi.radmonitor.DomainTest" time="0.009"/>
+  <testcase name="jsonRoundTrip" classname="ua.kpi.radmonitor.DomainTest" time="0.004"/>
+  <testcase name="rejectEmptyName" classname="ua.kpi.radmonitor.DomainTest" time="0.001"/>
+  <testcase name="doseCalculation" classname="ua.kpi.radmonitor.DomainTest" time="0.0"/>
+  <testcase name="rejectOverflow" classname="ua.kpi.radmonitor.DomainTest" time="0.001"/>
+  <testcase name="rejectInvalidImportedMeasurement" classname="ua.kpi.radmonitor.DomainTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

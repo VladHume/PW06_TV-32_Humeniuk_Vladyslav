@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="ua.kpi.radmonitor.RoomIntegrationTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-11-07T12:50:02" hostname="Mac" time="22.045">
+  <properties/>
+  <testcase name="insertUpdateDeleteAndFlow" classname="ua.kpi.radmonitor.RoomIntegrationTest" time="22.045"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
